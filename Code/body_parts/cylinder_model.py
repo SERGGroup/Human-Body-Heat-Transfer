@@ -1,10 +1,7 @@
 
 class Cylinder:
 
-    """
+    def __init__(self):
 
-        Replace "pass" with your Code ...
-
-    """
-
-    pass
+        self.d = 10
+        self.h = 20
