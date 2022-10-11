@@ -23,6 +23,11 @@ class Cylinder:
         Qr = self.hr * self.area_s() * (Tsk - Tamb) * fcl
         return Qr
 
+    def He(self):
+        P1 = Pvap(Tsk)  # mettendo Rcl=10 ottengo un risultato simile a quello di EES
+        P2 = Pvap(Tamb)
+        He = self.area_s() * (P1 - (phi * P2)) * 0.06 / ((10 + (1 / (fcl * self.he))))
+        return He
     
 
 
@@ -156,7 +161,7 @@ class Body:
         return A
 
 
-    def Qctot(self):  # calore scambiato per convezione
+    def Qctot(self):                                        # calore scambiato per convezione
         Q = 0
         for i in self.l:
             if i.doppio == 0:
@@ -166,7 +171,7 @@ class Body:
         return Q
 
 
-    def Qrtot(self):  # calore scambiato per irraggiamento
+    def Qrtot(self):                                        # calore scambiato per irraggiamento
         Q = 0
         for i in self.l:
             if i.doppio == 0:
@@ -175,17 +180,14 @@ class Body:
                 Q += 2 * i.Qr()
         return Q
 
-    def He(self):  # calore scambiato per evaporazione
-        H = 0  # nel modello EES la Rcl è 10, non capisco perchè
-        P1 = Pvap(Tsk)  # mettendo Rcl=10 ottengo un risultato simile a quello di EES
-        P2 = Pvap(Tamb)
-        w = w_sk(Tamb)
+    def He(self):                                           # calore scambiato per evaporazione
+        H = 0                                               # nel modello EES la Rcl è 10, non capisco perchè
+        w = w_sk(Tamb)                                      # essendo a riposo e cercando una T per cui U_dot = 0 pensavo di mettere la w minima
         for i in self.l:
-            He = i.area_s() * (P1 - (phi * P2)) * 0.06 / ((10 + (1 / (fcl * i.he))))
             if i.doppio == 0:
-                H += He
+                H += i.He()
             else:
-                H += 2 * He
+                H += 2 * i.He()
         return H
 
     def m_dot_res(self):
