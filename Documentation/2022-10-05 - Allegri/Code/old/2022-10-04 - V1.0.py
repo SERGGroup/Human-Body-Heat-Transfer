@@ -138,6 +138,7 @@ class Body:
         self.eta=25
         self.Atot=1.8
 
+        self.__init_M()
                                                     # misure prese da Takemori et al. per persona di 1,76 m,
                                                     # da trovare relazioni fra i diversi raggi e tra un raggio
                                                     # di riferimento (tronco) e l'altezza del campione ?
@@ -191,7 +192,7 @@ class Body:
         return H
 
     def m_dot_res(self):
-        m_dot_res= 1.433 * self.Atot * Body().M() * (10 ** (-6))
+        m_dot_res= 1.433 * self.Atot * self.M * (10 ** (-6))
         return m_dot_res
 
 
@@ -199,19 +200,19 @@ class Body:
         DeltaH_res = (Body().m_dot_res() * cp_air * (Texp - Tixp)) + (Body().m_dot_res() * ((omegax(Pvap(Texp)) * hvap(Texp)) - (omegax(Pvap(Tixp)) * hvap(Tixp))))
         return DeltaH_res
 
-    def M(self):
+    def __init_M(self):
         if self.sesso == 1:
             M = 66.5 + 13.8 * self.peso + 5 * self.altezza * 100 - 6.8 * self.eta
         else:
             M = 65.51 + 9.6 * self.peso + 1.8 * self.altezza * 100 - 4.7 * self.eta
-        return M * 4184 / 86400
 
+        self.M = M * 4184 / 86400
 
     def W(self):
         W=0             #corpo a riposo
         return W
     def Udot(self):
-        Udot = Body().M() - (Body().Qctot() + Body().Qrtot() + Body().He() + Body().DeltaH_res()) - Body().W()
+        Udot = Body().M - (Body().Qctot() + Body().Qrtot() + Body().He() + Body().DeltaH_res()) - Body().W()
         return Udot
 
 
@@ -259,13 +260,7 @@ Tixp = Tamb             # ipotesi fatta da me
 phi_exp = 0.9           # umidità relativa
 phi_ixp = phi           # umidità relativa
 
-
-
-
-
-
-
-
+body = Body()
 
 print('Qctot=', Body().Qctot(),'[W]')
 print('Qrtot=', Body().Qrtot(),'[W]')
