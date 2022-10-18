@@ -20,13 +20,21 @@ class Cylinder:
         return Qc
 
     def Qr(self):
-        Qr = self.hr * self.area_s() * (Tsk - Tamb) * fcl
-        return Qr
+        sigma= 5.67*(10**(-8))
+        eps_pelle= 0.95
+        Qr =  sigma * self.area_s() *eps_pelle* ((Tsk**4) - (Tamb**4)) * fcl * 0.73                 #termine preso da Fagner,
+        return Qr                                                                                   #è il rapporto tra l'area effettivamente sottoposta
+                                                                                                    # a scambio termico per radiazione e l'area di DuBois
+                                                                                                    #per una persona in piedi
 
     def He(self):
-        P1 = Pvap(Tsk)  # mettendo Rcl=10 ottengo un risultato simile a quello di EES
+        P1 = Pvap(Tsk)
         P2 = Pvap(Tamb)
-        He = self.area_s() * (P1 - (phi * P2)) * 0.06 / ((10 + (1 / (fcl * self.he))))
+        if v_air <= 0.2:
+            he= 16.5 * self.hc
+        else:
+            he= 8.3 * (v_air**0.5) * 16.5
+        He = self.area_s() * (P1 - (phi * P2)) * w_sk(Tamb) / ((Rcl + (1 / (fcl * he))))
         return He
     
 
@@ -143,8 +151,8 @@ class Body:
                                                     # da trovare relazioni fra i diversi raggi e tra un raggio
                                                     # di riferimento (tronco) e l'altezza del campione ?
     def Area_tot_scambio(self):
+        A=0
         for i in self.l:
-            A = 0
             if i.doppio == 0:
                 A += i.area_s()
             else:
@@ -153,22 +161,26 @@ class Body:
 
 
     def Area_tot(self):
-        for i in self.l:
-            A = 0
+       A=0
+       for i in self.l:
             if i.doppio == 0:
                 A += i.area()
             else:
                 A += 2 * i.area()
-        return A
+       return A
 
 
     def Qctot(self):                                        # calore scambiato per convezione
         Q = 0
-        for i in self.l:
-            if i.doppio == 0:
-                Q += i.Qc()
-            else:
-                Q += 2 * i.Qc()
+        if v_air<= 0.2:
+            for i in self.l:
+                if i.doppio == 0:
+                    Q += i.Qc()
+                else:
+                    Q += 2 * i.Qc()
+        else:
+            hc= 8.3 * (v_air**0.5)                    #ASHRAE
+            Q=Body().Area_tot_scambio() * hc * (Tsk-Tamb) * fcl
         return Q
 
 
@@ -217,7 +229,8 @@ class Body:
 
 
 def Pvap(T):
-    P = 611.2 * math.exp((40650 / 8.314) * ((1 / 273.15) - (1 / T)))  # equazione di Clapeyron
+    #P = 611.2 * math.exp((40650 / 8.314) * ((1 / 273.15) - (1 / T)))  # equazione di Clapeyron
+    P=(math.exp(18.956-(4030.18/(T-38.15))))/10                               #eq Antoine, conversione da Human Thermal enviroment pag 15
     return P
 
 
@@ -249,7 +262,8 @@ def omegax(Px):
 
 
 Pamb=101325
-Tamb=302.5
+Tamb=303.95
+v_air=0.20
 Tsk=306.5
 fcl=1 #(corpo nudo)
 Rcl=0
@@ -262,9 +276,19 @@ phi_ixp = phi           # umidità relativa
 
 body = Body()
 
+print('Atot_s=',body.Area_tot_scambio())
+print('Pamb=',Pvap(Tamb))
+print('Pskin=',Pvap(Tsk))
 print('Qctot=', Body().Qctot(),'[W]')
 print('Qrtot=', Body().Qrtot(),'[W]')
 print('He=', Body().He(),'[W]')
 print('mres=', Body().m_dot_res(),'[kg/s]')
 print('DeltaH=', Body().DeltaH_res(),'[W]')
 print('Udot=',Body().Udot(),'[W]')
+'''
+
+while math.fabs(Body().Udot()) > 0.01:
+    Tamb += 0.1
+print (Tamb)
+print('Udot=',Body().Udot(),'[W]')
+'''
