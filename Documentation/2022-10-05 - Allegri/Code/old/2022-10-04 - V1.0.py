@@ -3,41 +3,64 @@ import math
 
 class Cylinder:
     def __init__(self, d, h):
-        self.r = d / 2
-        self.h = h
+        self.r = d / 200
+        self.h = h/ 100
 
     def volume(self):
-        return (math.pi * self.h * self.r ** 2) / 1000000
+        return (math.pi * self.h * self.r ** 2)
 
     def area_s(self):
-        return (math.pi * self.r * 2 * self.h) / 10000
+        return (math.pi * self.r * 2 * self.h)
 
     def area(self):
         return ((math.pi * self.r * 2 * self.h) + (math.pi * 4 * self.r ** 2)) / 10000
 
     def Qc(self):
-        Qc = self.hc * self.area_s() * (Tsk - Tamb) * fcl
+        Qc = self.hc * self.area_s() * (self.Tsk() - Tamb) * fcl
         return Qc
 
     def Qr(self):
         sigma= 5.67*(10**(-8))
         eps_pelle= 0.95
-        Qr =  sigma * self.area_s() *eps_pelle* ((Tsk**4) - (Tamb**4)) * fcl * 0.73                 #termine preso da Fagner,
+        Qr =  sigma * self.area_s() *eps_pelle* ((self.Tsk()**4) - (Tamb**4)) * fcl * 0.73                 #termine preso da Fagner,
         return Qr                                                                                   #è il rapporto tra l'area effettivamente sottoposta
-                                                                                                    # a scambio termico per radiazione e l'area di DuBois
-                                                                                                    #per una persona in piedi
-
+                                                                                                    # a scambio termico per radiazione e l'area di DuBois                                                                                            #per una persona in piedi
     def He(self):
-        P1 = Pvap(Tsk)
+        P1 = Pvap(self.Tsk())
         P2 = Pvap(Tamb)
+        w=w_sk(Tamb)
         if v_air <= 0.2:
             he= 16.5 * self.hc
         else:
             he= 8.3 * (v_air**0.5) * 16.5
-        He = self.area_s() * (P1 - (phi * P2)) * w_sk(Tamb) / ((Rcl + (1 / (fcl * he))))
+        He = self.area_s() * (P1 - (phi * P2)) * 0.006 / ((Rcl + (1 / (fcl * he))))
         return He
-    
 
+    def H_res(self):
+        H_res = ((0.0014 * Body().M() * (34 - Tamb + 273.15)) + (0.0173 * Body().M() * (5.87 - Pvap(Tamb)))) * self.area_s()  # da ASHRAE
+        return H_res
+
+    def M_vol(self):
+        M_vol= self.M_i()/ self.volume()
+        return M_vol
+
+    def Tsk(self):
+        k= 2.21                                      #conduzione in cilindro con generazione di calore
+        Tsk= self.Tint-(self.M_vol()*(self.r**2)/(4*k))
+        return Tsk
+
+    def DeltaH_bl(self):
+        Tve= self.Tint
+        Tar= 310
+        delta= -(0.001 * self.v_dot_bl /60)* rho_bl * cp_ve * (Tve-Tar) * self.eps
+        return delta
+
+    def M_i(self):
+        return Body().M() * self.volume() / Body().Vol_tot()
+
+    def Udot(self):
+        Udot = self.M_i() - (self.Qc() + self.Qr() + self.He() + self.H_res()) + self.DeltaH_bl()
+        return Udot
 
 class Head(Cylinder):
     def __init__(self, d, h):
@@ -47,6 +70,10 @@ class Head(Cylinder):
         self.hc = 3.6
         self.he = 5.9
         self.doppio = 0
+        self.eps= 0.90
+        self.Tint = 311.5
+        self.Tar= 310.5
+        self.v_dot_bl = 0.75
 
 
 class Neck(Cylinder):
@@ -57,6 +84,9 @@ class Neck(Cylinder):
         self.hc = 3.6
         self.he = 5.9
         self.doppio = 0
+        self.eps = 0.90
+        self.Tint = 310.5
+        self.v_dot_bl = 0.75
 
 
 class Trunk(Cylinder):
@@ -67,6 +97,9 @@ class Trunk(Cylinder):
         self.hc = 3.2
         self.he = 5.3
         self.doppio = 0
+        self.eps= 1
+        self.Tint = 310
+        self.v_dot_bl = 1.73
 
 
 class Arm(Cylinder):
@@ -77,6 +110,9 @@ class Arm(Cylinder):
         self.hc = 2.9
         self.he = 4.8
         self.doppio = 1
+        self.eps= 0.92
+        self.Tint = 309.5
+        self.v_dot_bl = 0.21
 
 
 class Forearm(Cylinder):
@@ -87,6 +123,9 @@ class Forearm(Cylinder):
         self.hc = 3.7
         self.he = 6.1
         self.doppio = 1
+        self.eps = 0.92
+        self.Tint = 309
+        self.v_dot_bl = 0.21
 
 
 class Hand(Cylinder):
@@ -97,6 +136,9 @@ class Hand(Cylinder):
         self.hc = 4.1
         self.he = 6.8
         self.doppio = 1
+        self.eps = 0.92
+        self.Tint = 308.5
+        self.v_dot_bl = 0.21
 
 
 class Thigh(Cylinder):
@@ -107,6 +149,9 @@ class Thigh(Cylinder):
         self.hc = 4.1
         self.he = 6.8
         self.doppio = 1
+        self.eps = 0.92
+        self.Tint = 309.5
+        self.v_dot_bl = 0.28
 
 
 class Leg(Cylinder):
@@ -117,6 +162,9 @@ class Leg(Cylinder):
         self.hc = 4.1
         self.he = 6.8
         self.doppio = 1
+        self.eps = 0.92
+        self.Tint = 309
+        self.v_dot_bl = 0.28
 
 
 class Foot(Cylinder):
@@ -127,6 +175,9 @@ class Foot(Cylinder):
         self.hc = 5.1
         self.he = 8.4
         self.doppio = 1
+        self.eps = 0.92
+        self.Tint = 308.5
+        self.v_dot_bl = 0.28      #[L/min]
 
 
 class Body:
@@ -146,7 +197,7 @@ class Body:
         self.eta=25
         self.Atot=1.8
 
-        self.__init_M()
+
                                                     # misure prese da Takemori et al. per persona di 1,76 m,
                                                     # da trovare relazioni fra i diversi raggi e tra un raggio
                                                     # di riferimento (tronco) e l'altezza del campione ?
@@ -169,18 +220,39 @@ class Body:
                 A += 2 * i.area()
        return A
 
+    def Vol_tot(self):
+        V=0
+        for i in self.l:
+            if i.doppio == 0:
+                V += i.volume()
+            else:
+                V += 2 * i.volume()
+        return V
+
+    def M(self):
+        if self.sesso == 1:
+            M = 66.5 + 13.8 * self.peso + 5 * self.altezza * 100 - 6.8 * self.eta
+        else:
+            M = 65.51 + 9.6 * self.peso + 1.8 * self.altezza * 100 - 4.7 * self.eta
+
+        return  M * 4184 / 86400
 
     def Qctot(self):                                        # calore scambiato per convezione
-        Q = 0
         if v_air<= 0.2:
+            Q=0
             for i in self.l:
                 if i.doppio == 0:
                     Q += i.Qc()
                 else:
                     Q += 2 * i.Qc()
         else:
-            hc= 8.3 * (v_air**0.5)                    #ASHRAE
-            Q=Body().Area_tot_scambio() * hc * (Tsk-Tamb) * fcl
+            hc= 8.3 * (v_air**0.5)                  #ASHRAE
+            Q=0
+            for i in l:
+                if i.doppio==0:
+                    Q += i.area() * hc * (i.Tsk() - Tamb) * fcl
+                else:
+                    Q+= i.area() * hc * (i.Tsk() - Tamb) * fcl * 2
         return Q
 
 
@@ -208,23 +280,21 @@ class Body:
         return m_dot_res
 
 
-    def DeltaH_res(self):
-        DeltaH_res = (Body().m_dot_res() * cp_air * (Texp - Tixp)) + (Body().m_dot_res() * ((omegax(Pvap(Texp)) * hvap(Texp)) - (omegax(Pvap(Tixp)) * hvap(Tixp))))
-        return DeltaH_res
-
-    def __init_M(self):
-        if self.sesso == 1:
-            M = 66.5 + 13.8 * self.peso + 5 * self.altezza * 100 - 6.8 * self.eta
-        else:
-            M = 65.51 + 9.6 * self.peso + 1.8 * self.altezza * 100 - 4.7 * self.eta
-
-        self.M = M * 4184 / 86400
+    def H_res(self):
+        #H_res = (Body().m_dot_res() * cp_air * (Texp - Tixp)) + (Body().m_dot_res() * ((omegax(Pvap(Texp)) * hvap(Texp)) - (omegax(Pvap(Tixp)) * hvap(Tixp))))
+        H_res = 0
+        for i in self.l:
+            if i.doppio == 0:
+                H_res += i.H_res()
+            else:
+                H_res += 2 * i.H_res()
+        return H_res
 
     def W(self):
         W=0             #corpo a riposo
         return W
     def Udot(self):
-        Udot = Body().M - (Body().Qctot() + Body().Qrtot() + Body().He() + Body().DeltaH_res()) - Body().W()
+        Udot = Body().M() - (Body().Qctot() + Body().Qrtot() + Body().He() + Body().H_res()) - Body().W()
         return Udot
 
 
@@ -235,7 +305,7 @@ def Pvap(T):
 
 
 def w_sk(Tamb):  # parametro
-    if Tamb < 304:  # in K
+    if Tamb < 303:  # in K
         w = 0.009 * Tamb - 2.577
     else:
         w = 0.122 * Tamb - 36.816
@@ -262,33 +332,79 @@ def omegax(Px):
 
 
 Pamb=101325
-Tamb=303.95
-v_air=0.20
-Tsk=306.5
+Tamb=302
+v_air=0.15
+#Tsk=306.5
 fcl=1 #(corpo nudo)
 Rcl=0
 phi=0.5
 cp_air = 1005           # assumo come costante
-Texp = Tsk + 1          # temperatura aria espirata da assumere (come la assumo??)
-Tixp = Tamb             # ipotesi fatta da me
-phi_exp = 0.9           # umidità relativa
-phi_ixp = phi           # umidità relativa
+#Texp = Tsk + 1          # temperatura aria espirata da assumere (come la assumo??)
+#Tixp = Tamb             # ipotesi fatta da me
+#phi_exp = 0.9           # umidità relativa
+#phi_ixp = phi           # umidità relativa
+cp_bl=3850 #[J/kg*K]
+cp_ve=cp_bl
+cp_ar=cp_bl
+rho_bl=1059 #[kg/m^3]
 
 body = Body()
 
-print('Atot_s=',body.Area_tot_scambio())
-print('Pamb=',Pvap(Tamb))
-print('Pskin=',Pvap(Tsk))
-print('Qctot=', Body().Qctot(),'[W]')
-print('Qrtot=', Body().Qrtot(),'[W]')
-print('He=', Body().He(),'[W]')
-print('mres=', Body().m_dot_res(),'[kg/s]')
-print('DeltaH=', Body().DeltaH_res(),'[W]')
-print('Udot=',Body().Udot(),'[W]')
-'''
 
-while math.fabs(Body().Udot()) > 0.01:
-    Tamb += 0.1
-print (Tamb)
-print('Udot=',Body().Udot(),'[W]')
-'''
+
+#print('omegaxTexp=',omegax(Texp))
+#print('Atot_s=',body.Area_tot_scambio())
+#print('Pamb=',Pvap(Tamb))
+#print('Pskin=',Pvap(Tsk))
+
+head = Head(14.6, 20.7)
+neck = Neck(11.4, 8.3)
+trunk = Trunk(26.0, 79.8)
+arm = Arm(9.0, 35.3)
+forearm = Forearm(7.4, 29.2)
+hand = Hand(4.6, 30.0)
+thigh = Thigh(13.4, 35.2)
+leg = Leg(8.6, 37.9)
+foot = Foot(7.2, 24.1)
+
+l=[head, neck, trunk, arm, forearm, hand, thigh, leg, foot]
+
+while math.fabs(Body().Udot()) > 0.1:
+    Tamb += 0.01
+    print ('Tamb=',Tamb)
+    print('Udot=',Body().Udot(),'[W]')
+    print('\n')
+
+
+
+for i in l:
+    print(i)
+    print('Mvol= ', i.M_i(),'[W/m^3]')
+    print('Tsk', i.Tsk(), '[K]')
+    print('Qc=', i.Qc(),'[W]')
+    print('Qr=', i.Qr(),'[W]')
+    print('He=', i.He(),'[W]')
+    print('H_res=', i.H_res(),'[W]')
+    if i is not trunk:
+        print('DeltaH blood', i.DeltaH_bl(), '[kg/s]')
+        print('Udot=', i.Udot(), '[W]')
+    else:
+        delta=0
+        for i in l:
+            if i.doppio==0:
+                delta -= i.DeltaH_bl()
+            else:
+                delta -= 2*i.DeltaH_bl()
+        print('DeltaH blood', delta , '[kg/s]')
+        print('Udot=', i.Udot() + delta, '[W]')
+    print('\n')
+
+i=Body()
+print('Body')
+print('M= ', i.M(),'[W/m^3]')
+print('Qc=', i.Qctot(),'[W]')
+print('Qr=', i.Qrtot(),'[W]')
+print('He=', i.He(),'[W]')
+print('H_res=', i.H_res(),'[W]')
+print('Udot=', i.Udot(), '[W]')
+
