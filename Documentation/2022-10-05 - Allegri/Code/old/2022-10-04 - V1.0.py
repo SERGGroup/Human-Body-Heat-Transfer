@@ -2,9 +2,16 @@ import math
 from matplotlib import pyplot as plt
 
 class Cylinder:
-    def __init__(self, d, h):
+    def __init__(self, d, h, prev=None):
         self.r = d / 200
         self.h = h/ 100
+
+        self.prev = prev
+        self.succ = list()
+
+        if prev is not None:
+
+            prev.succ.appen(self)
 
     def volume(self):
         return (math.pi * self.h * self.r ** 2)
@@ -83,9 +90,21 @@ class Cylinder:
         return Tsk
 
     def DeltaH_bl(self):
-        Tve= self.Tint
-        Tar= 310
-        delta= -(0.001 * self.v_dot_bl /60)* rho_bl * cp_ve * (Tve-Tar) * self.eps
+
+        delta = 0.
+
+        if self.prev is not None:
+
+            dt = self.T_int - self.prev.T_int
+            delta += self.blod_HE(dt)
+
+        for succ in self.succ:
+
+            dt = self.T_int - succ.T_int
+            delta += self.blod_HE(dt)
+
+    def blod_HE(self, DT):
+        delta= -(0.001 * self.v_dot_bl /60) * rho_bl * cp_ve * DT * self.eps
         return delta
 
     def M_i(self):
@@ -376,7 +395,7 @@ def TC(Tamb):
     return T
 
 def w_sk(Tamb):# parametro
-    T=TC(Tamb)
+    T=303 #TC(Tamb)
     if Tamb <= T:  # in K
         w = 0.006
     else:
@@ -439,39 +458,39 @@ L=['head', 'neck', 'trunk', 'arm', 'forearm', 'hand', 'thigh', 'leg', 'foot']
 print(w_sk(Tamb))'''
 
 
-print(TC(Tamb))
-n=0
-for i in l:
-    print(L[n])
-    print('Mvol= ', i.M_i(),'[W/m^3]')
-    print('Tsk', i.Tsk(), '[K]')
-    print('Qc=', i.Qc(),'[W]')
-    print('Qr=', i.Qr(),'[W]')
-    print('He=', i.He(),'[W]')
-    print('H_res=', i.H_res(),'[W]')
-    if i is not trunk:
-        print('DeltaH blood=', i.DeltaH_bl(), '[W]')
-        print('Udot=', i.Udot(), '[W]')
-    else:
-        delta=0
-        for i in l:
-            if i.doppio==0:
-                delta -= i.DeltaH_bl()
-            else:
-                delta -= 2*i.DeltaH_bl()
-        print('DeltaH blood', delta , '[kg/s]')
-        print('Udot=', i.Udot() + delta, '[W]')
-    print('\n')
-    n+=1
-
-
-print('Body')
-print('M= ', body.M(),'[W]')
-print('Qc=', body.Qctot(),'[W]')
-print('Qr=', body.Qrtot(),'[W]')
-print('He=', body.He(),'[W]')
-print('H_res=', body.H_res(),'[W]')
-print('Udot=', body.Udot(), '[W]')
+# print(TC(Tamb))
+# n=0
+# for i in l:
+#     print(L[n])
+#     print('Mvol= ', i.M_i(),'[W/m^3]')
+#     print('Tsk', i.Tsk(), '[K]')
+#     print('Qc=', i.Qc(),'[W]')
+#     print('Qr=', i.Qr(),'[W]')
+#     print('He=', i.He(),'[W]')
+#     print('H_res=', i.H_res(),'[W]')
+#     if i is not trunk:
+#         print('DeltaH blood=', i.DeltaH_bl(), '[W]')
+#         print('Udot=', i.Udot(), '[W]')
+#     else:
+#         delta=0
+#         for i in l:
+#             if i.doppio==0:
+#                 delta -= i.DeltaH_bl()
+#             else:
+#                 delta -= 2*i.DeltaH_bl()
+#         print('DeltaH blood', delta , '[kg/s]')
+#         print('Udot=', i.Udot() + delta, '[W]')
+#     print('\n')
+#     n+=1
+#
+#
+# print('Body')
+# print('M= ', body.M(),'[W]')
+# print('Qc=', body.Qctot(),'[W]')
+# print('Qr=', body.Qrtot(),'[W]')
+# print('He=', body.He(),'[W]')
+# print('H_res=', body.H_res(),'[W]')
+# print('Udot=', body.Udot(), '[W]')
 '''
 y=[]
 x=[]
@@ -485,3 +504,39 @@ plt.title("variazione di energia interna")
 plt.xlabel("T[K]")
 plt.ylabel("U[W]")
 plt.show()'''
+
+def error_function(x):
+
+    res = 0
+
+    i = 1
+    for part in body.l:
+
+        part.eps = x[0]
+        if not type(part) == Trunk:
+
+            part.Tint = x[i]
+            i = i + 1
+
+    for part in body.l:
+
+        res += part.Udot() ** 2
+
+    print(res)
+    return res
+
+import scipy.optimize as opt
+import numpy as np
+
+res = opt.minimize(error_function, np.array([0.11, 311.5, 310.5, 309.5, 309, 308.5, 309.5, 309, 308.5]))
+print(res.x)
+
+# [Head(14.6, 20.7),
+# Neck(11.4, 8.3),
+# Trunk(26.0, 79.8),
+# Arm(9.0, 35.3),
+# Forearm(7.4, 29.2),
+# Hand(4.6, 30.0),
+# Thigh(13.4, 35.2),
+# Leg(8.6, 37.9),
+# Foot(7.2, 24.1)]
