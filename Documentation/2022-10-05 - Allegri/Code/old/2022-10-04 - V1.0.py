@@ -1,5 +1,5 @@
 import math
-
+from matplotlib import pyplot as plt
 
 class Cylinder:
     def __init__(self, d, h):
@@ -16,7 +16,19 @@ class Cylinder:
         return ((math.pi * self.r * 2 * self.h) + (math.pi * 4 * self.r ** 2)) / 10000
 
     def Qc(self):
-        Qc = self.hc * self.area_s() * (self.Tsk() - Tamb) * fcl
+        if v_air<= 0.2:
+            Qc = self.hc * self.area_s() * (self.Tsk() - Tamb) * fcl
+        else:
+            hc= 8.3 * (v_air**0.5)                  #ASHRAE
+            Qc = hc * self.area_s() * (self.Tsk() - Tamb) * fcl
+        return Qc
+
+    def Qc_iter (self,T):
+        if v_air <= 0.2:
+            Qc = self.hc * self.area_s() * (self.Tsk() - T) * fcl
+        else:
+            hc = 8.3 * (v_air ** 0.5)  # ASHRAE
+            Qc = hc * self.area_s() * (self.Tsk() - T) * fcl
         return Qc
 
     def Qr(self):
@@ -24,20 +36,41 @@ class Cylinder:
         eps_pelle= 0.95
         Qr =  sigma * self.area_s() *eps_pelle* ((self.Tsk()**4) - (Tamb**4)) * fcl * 0.73                 #termine preso da Fagner,
         return Qr                                                                                   #è il rapporto tra l'area effettivamente sottoposta
-                                                                                                    # a scambio termico per radiazione e l'area di DuBois                                                                                            #per una persona in piedi
+                                                                                                    # a scambio termico per radiazione e l'area di DuBois
+    def Qr_iter (self,T):
+        sigma = 5.67 * (10 ** (-8))
+        eps_pelle = 0.95
+        Qr = sigma * self.area_s() * eps_pelle * ((self.Tsk() ** 4) - (T ** 4)) * fcl * 0.73
+        return Qr
+
     def He(self):
         P1 = Pvap(self.Tsk())
         P2 = Pvap(Tamb)
-        w=w_sk(Tamb)
+        w = w_sk(Tamb)
         if v_air <= 0.2:
             he= 16.5 * self.hc
         else:
             he= 8.3 * (v_air**0.5) * 16.5
-        He = self.area_s() * (P1 - (phi * P2)) * 0.006 / ((Rcl + (1 / (fcl * he))))
+        He = self.area_s() * (P1 - (phi * P2)) * w / ((Rcl + (1 / (fcl * he))))
+        return He
+
+    def He_iter(self,T):
+        P1 = Pvap(self.Tsk())
+        P2 = Pvap(T)
+        w = 0.006
+        if v_air <= 0.2:
+            he= 16.5 * self.hc
+        else:
+            he= 8.3 * (v_air**0.5) * 16.5
+        He = self.area_s() * (P1 - (phi * P2)) * w / ((Rcl + (1 / (fcl * he))))
         return He
 
     def H_res(self):
         H_res = ((0.0014 * Body().M() * (34 - Tamb + 273.15)) + (0.0173 * Body().M() * (5.87 - Pvap(Tamb)))) * self.area_s()  # da ASHRAE
+        return H_res
+
+    def H_res_iter(self,T):
+        H_res = ((0.0014 * Body().M() * (34 - T + 273.15)) + (0.0173 * Body().M() * (5.87 - Pvap(T)))) * self.area_s()  # da ASHRAE
         return H_res
 
     def M_vol(self):
@@ -237,25 +270,23 @@ class Body:
 
         return  M * 4184 / 86400
 
-    def Qctot(self):                                        # calore scambiato per convezione
-        if v_air<= 0.2:
-            Q=0
-            for i in self.l:
-                if i.doppio == 0:
-                    Q += i.Qc()
-                else:
-                    Q += 2 * i.Qc()
-        else:
-            hc= 8.3 * (v_air**0.5)                  #ASHRAE
-            Q=0
-            for i in l:
-                if i.doppio==0:
-                    Q += i.area() * hc * (i.Tsk() - Tamb) * fcl
-                else:
-                    Q+= i.area() * hc * (i.Tsk() - Tamb) * fcl * 2
+    def Qctot(self):                                        # calore scambiato per convezione                  #ASHRAE
+        Q=0
+        for i in l:
+            if i.doppio==0:
+                Q += i.Qc()
+            else:
+                Q+= i.Qc() * 2
         return Q
 
-
+    def Qctot_iter(self,T):                                        # calore scambiato per convezione                  #ASHRAE
+        Q=0
+        for i in l:
+            if i.doppio==0:
+                Q += i.Qc_iter(T)
+            else:
+                Q+= i.Qc_iter(T) * 2
+        return Q
     def Qrtot(self):                                        # calore scambiato per irraggiamento
         Q = 0
         for i in self.l:
@@ -265,16 +296,31 @@ class Body:
                 Q += 2 * i.Qr()
         return Q
 
+    def Qrtot_iter(self,T):                                        # calore scambiato per irraggiamento
+        Q = 0
+        for i in self.l:
+            if i.doppio == 0:
+                Q += i.Qr_iter(T)
+            else:
+                Q += 2 * i.Qr_iter(T)
+        return Q
+
     def He(self):                                           # calore scambiato per evaporazione
         H = 0                                               # nel modello EES la Rcl è 10, non capisco perchè
-        w = w_sk(Tamb)                                      # essendo a riposo e cercando una T per cui U_dot = 0 pensavo di mettere la w minima
-        for i in self.l:
+        for i in self.l:                                    # essendo a riposo e cercando una T per cui U_dot = 0 pensavo di mettere la w minima
             if i.doppio == 0:
                 H += i.He()
             else:
                 H += 2 * i.He()
         return H
-
+    def He_iter(self,T):
+        H = 0
+        for i in self.l:
+            if i.doppio == 0:
+                H += i.He_iter(T)
+            else:
+                H += 2 * i.He_iter(T)
+        return H
     def m_dot_res(self):
         m_dot_res= 1.433 * self.Atot * self.M * (10 ** (-6))
         return m_dot_res
@@ -290,6 +336,15 @@ class Body:
                 H_res += 2 * i.H_res()
         return H_res
 
+    def H_res_iter(self,T):
+        H_res = 0
+        for i in self.l:
+            if i.doppio == 0:
+                H_res += i.H_res_iter(T)
+            else:
+                H_res += 2 * i.H_res_iter(T)
+        return H_res
+
     def W(self):
         W=0             #corpo a riposo
         return W
@@ -297,21 +352,38 @@ class Body:
         Udot = Body().M() - (Body().Qctot() + Body().Qrtot() + Body().He() + Body().H_res()) - Body().W()
         return Udot
 
+    def Udot_iter(self,T):
+        Udot = Body().M() - (Body().Qctot_iter(T) + Body().Qrtot_iter(T) + Body().He_iter(T) + Body().H_res_iter(T)) - Body().W()
+        return Udot
+
 
 def Pvap(T):
     #P = 611.2 * math.exp((40650 / 8.314) * ((1 / 273.15) - (1 / T)))  # equazione di Clapeyron
-    P=(math.exp(18.956-(4030.18/(T-38.15))))/10                               #eq Antoine, conversione da Human Thermal enviroment pag 15
+    P=(math.exp(18.956-(4030.18/(T-38.15))))/10                        #eq Antoine, conversione da Human Thermal enviroment pag 15
     return P
 
+def TC(Tamb):
+    T=Tamb
+    while math.fabs(body.Udot_iter(T)) > 0.1:
+        if body.Udot_iter(T) < 0:
+            T += 0.01
+            #print ('T=',T, '[K]')
+            #print('Udot=',body.Udot_iter(T),'[W]')
+        else:
+            T -= 0.01
+            #print ('T=',T , '[K]')
+            #print('Udot=',body.Udot_iter(T),'[W]')
+    return T
 
-def w_sk(Tamb):  # parametro
-    if Tamb < 303:  # in K
-        w = 0.009 * Tamb - 2.577
+def w_sk(Tamb):# parametro
+    T=TC(Tamb)
+    if Tamb <= T:  # in K
+        w = 0.006
     else:
-        w = 0.122 * Tamb - 36.816
+        w= 0.006 + 0.009 * (Tamb - T)
     return w
 
-def hvap(T):
+'''def hvap(T):
     t = T - 273.15
     if t >= 0 and t < 10:
         hvap = 42.117 * t / 10
@@ -321,42 +393,30 @@ def hvap(T):
         hvap = 84.012 + ((125.883 - 84.012) * (t - 20) / 10)
     elif t >= 30 and t <= 40:
         hvap = 125.883 + ((167.623 - 125.883) * (t - 30) / 10)
-    return hvap * 1000
+    return hvap * 1000'''
 
-def omegax(Px):
+'''def omegax(Px):
     omega = 0.622 * ((Px) / (Pamb - Px))
-    return omega
+    return omega'''
 
 
 
 
 
 Pamb=101325
-Tamb=302
+Tamb=300
 v_air=0.15
 #Tsk=306.5
 fcl=1 #(corpo nudo)
 Rcl=0
 phi=0.5
 cp_air = 1005           # assumo come costante
-#Texp = Tsk + 1          # temperatura aria espirata da assumere (come la assumo??)
-#Tixp = Tamb             # ipotesi fatta da me
-#phi_exp = 0.9           # umidità relativa
-#phi_ixp = phi           # umidità relativa
 cp_bl=3850 #[J/kg*K]
 cp_ve=cp_bl
 cp_ar=cp_bl
 rho_bl=1059 #[kg/m^3]
 
 body = Body()
-
-
-
-#print('omegaxTexp=',omegax(Texp))
-#print('Atot_s=',body.Area_tot_scambio())
-#print('Pamb=',Pvap(Tamb))
-#print('Pskin=',Pvap(Tsk))
-
 head = Head(14.6, 20.7)
 neck = Neck(11.4, 8.3)
 trunk = Trunk(26.0, 79.8)
@@ -368,17 +428,21 @@ leg = Leg(8.6, 37.9)
 foot = Foot(7.2, 24.1)
 
 l=[head, neck, trunk, arm, forearm, hand, thigh, leg, foot]
+L=['head', 'neck', 'trunk', 'arm', 'forearm', 'hand', 'thigh', 'leg', 'foot']
 
-while math.fabs(Body().Udot()) > 0.1:
+
+'''while math.fabs(body.Udot_iter()) > 0.1:
     Tamb += 0.01
-    print ('Tamb=',Tamb)
-    print('Udot=',Body().Udot(),'[W]')
+    print ('Tamb=',Tamb, '[K]')
+    print('Udot=',body.Udot_iter(),'[W]')
     print('\n')
+print(w_sk(Tamb))'''
 
 
-
+print(TC(Tamb))
+n=0
 for i in l:
-    print(i)
+    print(L[n])
     print('Mvol= ', i.M_i(),'[W/m^3]')
     print('Tsk', i.Tsk(), '[K]')
     print('Qc=', i.Qc(),'[W]')
@@ -386,7 +450,7 @@ for i in l:
     print('He=', i.He(),'[W]')
     print('H_res=', i.H_res(),'[W]')
     if i is not trunk:
-        print('DeltaH blood', i.DeltaH_bl(), '[kg/s]')
+        print('DeltaH blood=', i.DeltaH_bl(), '[W]')
         print('Udot=', i.Udot(), '[W]')
     else:
         delta=0
@@ -398,13 +462,26 @@ for i in l:
         print('DeltaH blood', delta , '[kg/s]')
         print('Udot=', i.Udot() + delta, '[W]')
     print('\n')
+    n+=1
 
-i=Body()
+
 print('Body')
-print('M= ', i.M(),'[W/m^3]')
-print('Qc=', i.Qctot(),'[W]')
-print('Qr=', i.Qrtot(),'[W]')
-print('He=', i.He(),'[W]')
-print('H_res=', i.H_res(),'[W]')
-print('Udot=', i.Udot(), '[W]')
+print('M= ', body.M(),'[W]')
+print('Qc=', body.Qctot(),'[W]')
+print('Qr=', body.Qrtot(),'[W]')
+print('He=', body.He(),'[W]')
+print('H_res=', body.H_res(),'[W]')
+print('Udot=', body.Udot(), '[W]')
+'''
+y=[]
+x=[]
+while Tamb <=310:
+    y.append(body.Udot())
+    x.append(Tamb)
+    Tamb += 1
 
+plt.plot(x,y)
+plt.title("variazione di energia interna")
+plt.xlabel("T[K]")
+plt.ylabel("U[W]")
+plt.show()'''
