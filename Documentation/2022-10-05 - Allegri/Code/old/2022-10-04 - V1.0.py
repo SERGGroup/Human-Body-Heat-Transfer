@@ -5,13 +5,14 @@ class Cylinder:
     def __init__(self, d, h, prev=None):
         self.r = d / 200
         self.h = h/ 100
+        self.delta=0.90
 
         self.prev = prev
         self.succ = list()
 
-        if prev is not None:
+        if self.prev is not None:
 
-            prev.succ.appen(self)
+            prev.succ.append(self)
 
     def volume(self):
         return (math.pi * self.h * self.r ** 2)
@@ -73,15 +74,21 @@ class Cylinder:
         return He
 
     def H_res(self):
-        H_res = ((0.0014 * Body().M() * (34 - Tamb + 273.15)) + (0.0173 * Body().M() * (5.87 - Pvap(Tamb)))) * self.area_s()  # da ASHRAE
-        return H_res
+        Hr=0
+        if type(self) == Trunk:
+                Hr += body.H_res() * 0.30
+        elif type(self) == Head:
+                Hr += body.H_res() * 0.45
+        elif type(self) == Neck:
+                Hr += body.H_res() * 0.25
+        else:
+                Hr+=0
+        return Hr
 
-    def H_res_iter(self,T):
-        H_res = ((0.0014 * Body().M() * (34 - T + 273.15)) + (0.0173 * Body().M() * (5.87 - Pvap(T)))) * self.area_s()  # da ASHRAE
-        return H_res
+
 
     def M_vol(self):
-        M_vol= self.M_i()/ self.volume()
+        M_vol= self.M_i()/ self.volume() *self.delta
         return M_vol
 
     def Tsk(self):
@@ -89,19 +96,21 @@ class Cylinder:
         Tsk= self.Tint-(self.M_vol()*(self.r**2)/(4*k))
         return Tsk
 
-    def DeltaH_bl(self):
-
+    def DeltaH_bl(self):                        #self.Tint = Tvenosa
+                                                #self.prec.Tint = Tarteriosa
         delta = 0.
 
         if self.prev is not None:
 
-            dt = self.T_int - self.prev.T_int
+            dt = self.Tint - self.prev.Tint
             delta += self.blod_HE(dt)
 
         for succ in self.succ:
 
-            dt = self.T_int - succ.T_int
+            dt = self.Tint - succ.Tint
             delta += self.blod_HE(dt)
+
+        return delta
 
     def blod_HE(self, DT):
         delta= -(0.001 * self.v_dot_bl /60) * rho_bl * cp_ve * DT * self.eps
@@ -118,11 +127,13 @@ class Head(Cylinder):
     def __init__(self, d, h):
         super().__init__(d, h)
 
+        #self.succ=[]
+        self.prev= Neck(11.4, 8.3)
         self.hr = 4.1
         self.hc = 3.6
         self.he = 5.9
         self.doppio = 0
-        self.eps= 0.90
+        self.eps= 1
         self.Tint = 311.5
         self.Tar= 310.5
         self.v_dot_bl = 0.75
@@ -132,11 +143,13 @@ class Neck(Cylinder):
     def __init__(self, d, h):
         super().__init__(d, h)
 
+        #self.succ= []
+        self.prev= Trunk(26.0, 79.8)
         self.hr = 4.1
         self.hc = 3.6
         self.he = 5.9
         self.doppio = 0
-        self.eps = 0.90
+        self.eps = 1
         self.Tint = 310.5
         self.v_dot_bl = 0.75
 
@@ -145,12 +158,13 @@ class Trunk(Cylinder):
     def __init__(self, d, h):
         super().__init__(d, h)
 
+        #self.succ= [Neck(11.4, 8.3), Arm(9.0, 35.3), Thigh(13.4, 35.2)]
         self.hr = 4.4
         self.hc = 3.2
         self.he = 5.3
         self.doppio = 0
         self.eps= 1
-        self.Tint = 310
+        self.Tint = 310.15
         self.v_dot_bl = 1.73
 
 
@@ -158,6 +172,8 @@ class Arm(Cylinder):
     def __init__(self, d, h):
         super().__init__(d, h)
 
+        #self.succ=[Forearm(7.4, 29.2)]
+        self.prev= Trunk(26.0, 79.8)
         self.hr = 5.2
         self.hc = 2.9
         self.he = 4.8
@@ -169,8 +185,10 @@ class Arm(Cylinder):
 
 class Forearm(Cylinder):
     def __init__(self, d, h):
-
         super().__init__(d, h)
+
+        #self.succ=[Hand(4.6, 30.0)]
+        self.prev= Arm(9.0, 35.3)
         self.hr = 4.9
         self.hc = 3.7
         self.he = 6.1
@@ -182,8 +200,10 @@ class Forearm(Cylinder):
 
 class Hand(Cylinder):
     def __init__(self, d, h):
-
         super().__init__(d, h)
+
+        #self.succ=[]
+        self.prev=Forearm(7.4, 29.2)
         self.hr = 4.1
         self.hc = 4.1
         self.he = 6.8
@@ -195,8 +215,10 @@ class Hand(Cylinder):
 
 class Thigh(Cylinder):
     def __init__(self, d, h):
-
         super().__init__(d, h)
+
+        #self.succ=[Leg(8.6, 37.9)]
+        self.prev= Trunk(26.0, 79.8)
         self.hr = 4.3
         self.hc = 4.1
         self.he = 6.8
@@ -208,8 +230,10 @@ class Thigh(Cylinder):
 
 class Leg(Cylinder):
     def __init__(self, d, h):
-
         super().__init__(d, h)
+
+        #self.succ= [Foot(7.2, 24.1)]
+        self.prev=Thigh(13.4, 35.2)
         self.hr = 5.3
         self.hc = 4.1
         self.he = 6.8
@@ -223,6 +247,8 @@ class Foot(Cylinder):
     def __init__(self, d, h):
         super().__init__(d, h)
 
+        #self.succ=[]
+        self.prev=Leg(8.6, 37.9)
         self.hr = 3.9
         self.hc = 5.1
         self.he = 8.4
@@ -306,7 +332,7 @@ class Body:
             else:
                 Q+= i.Qc_iter(T) * 2
         return Q
-    def Qrtot(self):                                        # calore scambiato per irraggiamento
+    def Qrtot(self):                                                # calore scambiato per irraggiamento
         Q = 0
         for i in self.l:
             if i.doppio == 0:
@@ -344,24 +370,12 @@ class Body:
         m_dot_res= 1.433 * self.Atot * self.M * (10 ** (-6))
         return m_dot_res
 
-
     def H_res(self):
-        #H_res = (Body().m_dot_res() * cp_air * (Texp - Tixp)) + (Body().m_dot_res() * ((omegax(Pvap(Texp)) * hvap(Texp)) - (omegax(Pvap(Tixp)) * hvap(Tixp))))
-        H_res = 0
-        for i in self.l:
-            if i.doppio == 0:
-                H_res += i.H_res()
-            else:
-                H_res += 2 * i.H_res()
+        H_res = ((0.0014 * Body().M() * (34 - Tamb + 273.15)) + (0.0173 * Body().M() * (5.87 - Pvap(Tamb)))) * self.Area_tot_scambio()  # da ASHRAE
         return H_res
 
     def H_res_iter(self,T):
-        H_res = 0
-        for i in self.l:
-            if i.doppio == 0:
-                H_res += i.H_res_iter(T)
-            else:
-                H_res += 2 * i.H_res_iter(T)
+        H_res = ((0.0014 * Body().M() * (34 - Tamb + 273.15)) + (0.0173 * Body().M() * (5.87 - Pvap(T)))) * self.Area_tot_scambio()  # da ASHRAE
         return H_res
 
     def W(self):
@@ -381,21 +395,27 @@ def Pvap(T):
     P=(math.exp(18.956-(4030.18/(T-38.15))))/10                        #eq Antoine, conversione da Human Thermal enviroment pag 15
     return P
 
-def TC(Tamb):
-    T=Tamb
-    while math.fabs(body.Udot_iter(T)) > 0.1:
+def TC(T,T1=310,T2=290):
+    if math.fabs(body.Udot_iter(T)) > 1:
         if body.Udot_iter(T) < 0:
-            T += 0.01
-            #print ('T=',T, '[K]')
-            #print('Udot=',body.Udot_iter(T),'[W]')
+            T= (T+T1)/2
+            #print('T=', T, '[K]')
+            #print('Udot=', body.Udot_iter(T), '[W]')
+            return  TC(T, T1, (T2 + T1) / 2)
+            #T += 0.01
+
         else:
-            T -= 0.01
-            #print ('T=',T , '[K]')
-            #print('Udot=',body.Udot_iter(T),'[W]')
+            T= (T+T2)/2
+            #T -= 0.01
+            #print('T=', T, '[K]')
+            #print('Udot=', body.Udot_iter(T), '[W]')
+            return TC(T, (T2 + T1) / 2, T2)
     return T
 
+
+
 def w_sk(Tamb):# parametro
-    T=303 #TC(Tamb)
+    T=TC(Tamb)   #303
     if Tamb <= T:  # in K
         w = 0.006
     else:
@@ -418,17 +438,14 @@ def w_sk(Tamb):# parametro
     omega = 0.622 * ((Px) / (Pamb - Px))
     return omega'''
 
-
-
-
+phi=0.5
+v_air=0.1                      # tra 0 e 0.4
+Tamb=300
 
 Pamb=101325
-Tamb=300
-v_air=0.15
-#Tsk=306.5
-fcl=1 #(corpo nudo)
+fcl=1                           #(corpo nudo)
 Rcl=0
-phi=0.5
+phi=0.
 cp_air = 1005           # assumo come costante
 cp_bl=3850 #[J/kg*K]
 cp_ve=cp_bl
@@ -449,48 +466,55 @@ foot = Foot(7.2, 24.1)
 l=[head, neck, trunk, arm, forearm, hand, thigh, leg, foot]
 L=['head', 'neck', 'trunk', 'arm', 'forearm', 'hand', 'thigh', 'leg', 'foot']
 
-
-'''while math.fabs(body.Udot_iter()) > 0.1:
-    Tamb += 0.01
-    print ('Tamb=',Tamb, '[K]')
-    print('Udot=',body.Udot_iter(),'[W]')
+'''
+for i in l:
+    print(i.succ)
+    print(type(i.prev))
+    print ('\n')
+while math.fabs(trunk.Udot()) > 0.1:
+    trunk.eps -= 0.01
+    print ('Tint=', trunk.Tint , '[K]')
+    print('eps=', trunk.eps)
+    print('deltahBlod=', trunk.DeltaH_bl(), '[W]')
+    print('Udot=', trunk.Udot() ,'[W]')
     print('\n')
-print(w_sk(Tamb))'''
+print(w_sk(Tamb))
+'''
+print('Tcomfort=', TC(Tamb))
 
 
-# print(TC(Tamb))
-# n=0
-# for i in l:
-#     print(L[n])
-#     print('Mvol= ', i.M_i(),'[W/m^3]')
-#     print('Tsk', i.Tsk(), '[K]')
-#     print('Qc=', i.Qc(),'[W]')
-#     print('Qr=', i.Qr(),'[W]')
-#     print('He=', i.He(),'[W]')
-#     print('H_res=', i.H_res(),'[W]')
-#     if i is not trunk:
-#         print('DeltaH blood=', i.DeltaH_bl(), '[W]')
-#         print('Udot=', i.Udot(), '[W]')
-#     else:
-#         delta=0
-#         for i in l:
-#             if i.doppio==0:
-#                 delta -= i.DeltaH_bl()
-#             else:
-#                 delta -= 2*i.DeltaH_bl()
-#         print('DeltaH blood', delta , '[kg/s]')
-#         print('Udot=', i.Udot() + delta, '[W]')
-#     print('\n')
-#     n+=1
-#
-#
-# print('Body')
-# print('M= ', body.M(),'[W]')
-# print('Qc=', body.Qctot(),'[W]')
-# print('Qr=', body.Qrtot(),'[W]')
-# print('He=', body.He(),'[W]')
-# print('H_res=', body.H_res(),'[W]')
-# print('Udot=', body.Udot(), '[W]')
+n=0
+for i in l:
+    print(L[n])
+    #print('Mvol= ', i.M_i(),'[W/m^3]')
+    #print('Tsk=', i.Tsk(), '[K]')
+    print('Qc=', i.Qc(),'[W]')
+    print('Qr=', i.Qr(),'[W]')
+    print('He=', i.He(),'[W]')
+    print('H_res=', i.H_res(),'[W]')
+    if i is not trunk:
+        print('DeltaH blood=', i.DeltaH_bl(), '[W]')
+        print('Udot=', i.Udot(), '[W]')
+    else:
+        delta=0
+        for i in l:
+            if i.doppio==0:
+                delta -= i.DeltaH_bl()
+            else:
+                delta -= 2*i.DeltaH_bl()
+        print('DeltaH blood', delta , '[kg/s]')
+        print('Udot=', i.Udot() + delta, '[W]')
+    print('\n')
+    n+=1
+
+print('Body')
+print('M= ', body.M(),'[W]')
+print('Qc=', body.Qctot(),'[W]')
+print('Qr=', body.Qrtot(),'[W]')
+print('He=', body.He(),'[W]')
+print('H_res=', body.H_res(),'[W]')
+print('Udot=', body.Udot(), '[W]')
+
 '''
 y=[]
 x=[]
@@ -503,16 +527,18 @@ plt.plot(x,y)
 plt.title("variazione di energia interna")
 plt.xlabel("T[K]")
 plt.ylabel("U[W]")
-plt.show()'''
-
+plt.show()
+'''
+Tamb=TC(Tamb)
 def error_function(x):
 
     res = 0
-
-    i = 1
+    i =0  #1 #2
+    
     for part in body.l:
 
-        part.eps = x[0]
+        #part.eps = x[0]
+        #part.delta = x[1]           #
         if not type(part) == Trunk:
 
             part.Tint = x[i]
@@ -522,14 +548,54 @@ def error_function(x):
 
         res += part.Udot() ** 2
 
-    print(res)
+    #print(res)
     return res
 
 import scipy.optimize as opt
 import numpy as np
-
-res = opt.minimize(error_function, np.array([0.11, 311.5, 310.5, 309.5, 309, 308.5, 309.5, 309, 308.5]))
+                                             #0.9,
+res = opt.minimize(error_function, np.array([ 311.5, 310.5, 309, 308.5, 308, 309, 308.5, 308]))
+print('\n')
 print(res.x)
+i = 0 #1  # 2
+a=['head', 'neck', 'arm', 'forearm', 'hand', 'thigh', 'leg', 'foot']
+print('\n')
+for part in body.l:
+    if not type(part) == Trunk:
+        part.Tint = res.x[i]
+        print(a[i],'Tsk=', part.Tsk(), '[K]')
+        print(a[i],'Qc=', part.Qc(), '[W]')
+        print(a[i],'Qr=', part.Qr(), '[W]')
+        print(a[i],'He=', part.He(), '[W]')
+        print(a[i],'H_res=', part.H_res(), '[W]')
+        print( a[i],'Tint=', part.Tint,'[K]')   #f'{type(part)} ='
+        print (a[i],'Udot=', part.Udot(),'[W] ,')
+        print('\n')
+        i = i + 1
+
+j=[ trunk, neck, arm, thigh]
+def Udot_trunk():
+    for i in j:
+        if i is trunk:
+            delta=0
+            for i in j :
+                if i.doppio==0:
+                    delta -= i.DeltaH_bl() * 0.8
+                else:
+                    delta -= 2*i.DeltaH_bl()
+    return  trunk.Udot() + delta
+
+print('trunk' ,'Tsk=', trunk.Tsk(), '[K]')
+print('trunk' ,'Qc=', trunk.Qc(), '[W]')
+print('trunk' ,'Qr=', trunk.Qr(), '[W]')
+print('trunk' ,'He=', trunk.He(), '[W]')
+print('trunk' ,'H_res=', trunk.H_res(), '[W]')
+print('trunk' ,'Tint=', trunk.Tint,'[K]')   #f'{type(part)} ='
+print('trunk' ,'Udot=', Udot_trunk(),'[W] ')
+print('\n')
+
+print('body =',body.Udot(), '[W]')
+
 
 # [Head(14.6, 20.7),
 # Neck(11.4, 8.3),
