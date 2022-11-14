@@ -367,7 +367,7 @@ class Body:
                 H += 2 * i.He_iter(T)
         return H
     def m_dot_res(self):
-        m_dot_res= 1.433 * self.Atot * self.M * (10 ** (-6))
+        m_dot_res= 1.433 * self.Atot * self.M() * (10 ** (-5))
         return m_dot_res
 
     def H_res(self):
@@ -389,6 +389,53 @@ class Body:
         Udot = Body().M() - (Body().Qctot_iter(T) + Body().Qrtot_iter(T) + Body().He_iter(T) + Body().H_res_iter(T)) - Body().W()
         return Udot
 
+    def Br(self):
+        Br = 0
+        for i in self.l:
+            B = i.Qr() * (1 - (Tamb / i.Tsk()))
+            if i.doppio == 0:
+                Br += B
+            else:
+                Br += 2 * B
+        return Br
+
+    def Bc(self):
+        Bc = 0
+        for i in self.l:
+            B = i.Qc() * (1 - (Tamb / i.Tsk()))
+            if i.doppio == 0:
+                Bc += B
+            else:
+                Bc += 2 * B
+        return Bc
+
+    def mean_Tsk(self):
+        T = 0
+        for i in self.l:
+            if i.doppio == 0:
+                T += i.Tsk()
+            else:
+                T += 2 * i.Tsk()
+        return T / 15
+
+    def Be(self):  # suodre stimato 10-12 l al giorno
+        mw_ = 3 * 10 ** (-6) * 1000  # ipotizzata al valore minimo con 0.3*10^-6, valore 3 in linea con articlo di ferreira
+        h_lv = 2260  # kJ/K
+        s_lv = 6.056  # kJ/kg*K
+        R_w = 0.46151  # kJ/kg*K
+        Be = mw_ * (h_lv - Tamb * s_lv) + mw_ * R_w * Tamb * math.log((Pvap(self.mean_Tsk()) / Pvap(Tamb)))
+        return Be
+
+    def Bres(self):
+        R_w = 461.51  # J/kg*K
+        Tex = trunk.Tint
+        deltaB_air = self.m_dot_res() * (cp_air * (Tex - Tamb - Tamb * math.log((Tex / Tamb))))                                                                      # semplificazioni dovute al fatto che T0==Tamb e P0==Pamb
+        deltaB_wat = self.m_dot_res() * omegax(Pvap(Tex)) * (cp_w * (Tex - Tamb - Tamb * math.log((Tex / Tamb))) + R_w * Tamb * math.log((Pvap(Tex) / Pvap(Tamb))))  # semplificazioni dovute al fatto che T0==Tamb e P0==Pamb
+        return deltaB_air - deltaB_wat
+
+    def Bdest(self):
+        return self.M() - (self.Bc()+self.Br()+self.Bres()+self.Be()) - self.W()
+
 
 def Pvap(T):
     #P = 611.2 * math.exp((40650 / 8.314) * ((1 / 273.15) - (1 / T)))  # equazione di Clapeyron
@@ -399,7 +446,7 @@ def TC(T,T1=310,T2=290):
     if math.fabs(body.Udot_iter(T)) > 1:
         if body.Udot_iter(T) < 0:
             T= (T+T1)/2
-            #print('T=', T, '[K]')
+            print('T=', T, '[K]')
             #print('Udot=', body.Udot_iter(T), '[W]')
             return  TC(T, T1, (T2 + T1) / 2)
             #T += 0.01
@@ -407,10 +454,11 @@ def TC(T,T1=310,T2=290):
         else:
             T= (T+T2)/2
             #T -= 0.01
-            #print('T=', T, '[K]')
+            print('T=', T, '[K]')
             #print('Udot=', body.Udot_iter(T), '[W]')
             return TC(T, (T2 + T1) / 2, T2)
-    return T
+    else:
+        return T
 
 
 
@@ -434,23 +482,23 @@ def w_sk(Tamb):# parametro
         hvap = 125.883 + ((167.623 - 125.883) * (t - 30) / 10)
     return hvap * 1000'''
 
-'''def omegax(Px):
+def omegax(Px):
     omega = 0.622 * ((Px) / (Pamb - Px))
-    return omega'''
+    return omega
 
 phi=0.5
 v_air=0.1                      # tra 0 e 0.4
-Tamb=300
+Tamb=302
 
 Pamb=101325
 fcl=1                           #(corpo nudo)
 Rcl=0
-phi=0.
 cp_air = 1005           # assumo come costante
 cp_bl=3850 #[J/kg*K]
 cp_ve=cp_bl
 cp_ar=cp_bl
 rho_bl=1059 #[kg/m^3]
+cp_w= 1900
 
 body = Body()
 head = Head(14.6, 20.7)
@@ -479,7 +527,7 @@ while math.fabs(trunk.Udot()) > 0.1:
     print('Udot=', trunk.Udot() ,'[W]')
     print('\n')
 print(w_sk(Tamb))
-'''
+#
 print('Tcomfort=', TC(Tamb))
 
 
@@ -516,19 +564,6 @@ print('H_res=', body.H_res(),'[W]')
 print('Udot=', body.Udot(), '[W]')
 
 '''
-y=[]
-x=[]
-while Tamb <=310:
-    y.append(body.Udot())
-    x.append(Tamb)
-    Tamb += 1
-
-plt.plot(x,y)
-plt.title("variazione di energia interna")
-plt.xlabel("T[K]")
-plt.ylabel("U[W]")
-plt.show()
-'''
 Tamb=TC(Tamb)
 def error_function(x):
 
@@ -557,6 +592,13 @@ import numpy as np
 res = opt.minimize(error_function, np.array([ 311.5, 310.5, 309, 308.5, 308, 309, 308.5, 308]))
 print('\n')
 print(res.x)
+
+i = 0
+for part in body.l:
+    if not type(part) == Trunk:
+        part.Tint = res.x[i]
+        i+=1
+'''
 i = 0 #1  # 2
 a=['head', 'neck', 'arm', 'forearm', 'hand', 'thigh', 'leg', 'foot']
 print('\n')
@@ -597,12 +639,23 @@ print('\n')
 print('body =',body.Udot(), '[W]')
 
 
-# [Head(14.6, 20.7),
-# Neck(11.4, 8.3),
-# Trunk(26.0, 79.8),
-# Arm(9.0, 35.3),
-# Forearm(7.4, 29.2),
-# Hand(4.6, 30.0),
-# Thigh(13.4, 35.2),
-# Leg(8.6, 37.9),
-# Foot(7.2, 24.1)]
+y=[]
+x=[]
+while Tamb <=310:
+    y.append(body.Udot_iter(Tamb))
+
+    x.append(Tamb)
+    Tamb += 1
+
+plt.plot(x,y)
+plt.title("variazione di energia interna")
+plt.xlabel("T[K]")
+plt.ylabel("U[W]")
+plt.show()
+'''
+print(body.Bc())
+print(body.Br())
+print(body.Bres())
+print(body.Be())
+print(body.Bdest())
+
