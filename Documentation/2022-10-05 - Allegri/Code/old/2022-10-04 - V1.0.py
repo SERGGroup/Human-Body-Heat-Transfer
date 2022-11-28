@@ -436,27 +436,38 @@ class Body:
     def Bdest(self):
         return self.M() - (self.Bc()+self.Br()+self.Bres()+self.Be()) - self.W()
 
+    def rendimento(self):
+        rend = 1 - (Body().Bdest()/Body().M())
+        return rend
+
 
 def Pvap(T):
     #P = 611.2 * math.exp((40650 / 8.314) * ((1 / 273.15) - (1 / T)))  # equazione di Clapeyron
     P=(math.exp(18.956-(4030.18/(T-38.15))))/10                        #eq Antoine, conversione da Human Thermal enviroment pag 15
     return P
 
-def TC(T,T1=310,T2=290):
-    if math.fabs(body.Udot_iter(T)) > 1:
-        if body.Udot_iter(T) < 0:
-            T= (T+T1)/2
-            print('T=', T, '[K]')
+def TC(t,T1=310,T2=290):
+    T=t
+    if math.fabs(body.Udot_iter(t)) > 1:
+        if body.Udot_iter(t) < 0:
+            T= (t+T1)/2
+            #print ('T1=',T1)
+            #print ('T2=',T2)
+            #print('U minore di zero, T=', T, '[K]')
+            #print('\n')
             #print('Udot=', body.Udot_iter(T), '[W]')
-            return  TC(T, T1, (T2 + T1) / 2)
+            return  TC(T, T1, t)
             #T += 0.01
 
         else:
-            T= (T+T2)/2
+            T= (t+T2)/2
             #T -= 0.01
-            print('T=', T, '[K]')
+            #print('T1=', T1)
+            #print('T2=', T2)
+            #print('U maggiore di zero, T=', T, '[K]')
+            #print('\n')
             #print('Udot=', body.Udot_iter(T), '[W]')
-            return TC(T, (T2 + T1) / 2, T2)
+            return TC(T, t, T2)
     else:
         return T
 
@@ -488,7 +499,7 @@ def omegax(Px):
 
 phi=0.5
 v_air=0.1                      # tra 0 e 0.4
-Tamb=302
+Tamb=309
 
 Pamb=101325
 fcl=1                           #(corpo nudo)
@@ -565,6 +576,8 @@ print('Udot=', body.Udot(), '[W]')
 
 '''
 Tamb=TC(Tamb)
+print(Tamb)
+
 def error_function(x):
 
     res = 0
@@ -598,7 +611,7 @@ for part in body.l:
     if not type(part) == Trunk:
         part.Tint = res.x[i]
         i+=1
-'''
+
 i = 0 #1  # 2
 a=['head', 'neck', 'arm', 'forearm', 'hand', 'thigh', 'leg', 'foot']
 print('\n')
@@ -636,9 +649,9 @@ print('trunk' ,'Tint=', trunk.Tint,'[K]')   #f'{type(part)} ='
 print('trunk' ,'Udot=', Udot_trunk(),'[W] ')
 print('\n')
 
-print('body =',body.Udot(), '[W]')
+print('body =',body.Udot_iter(TC(Tamb)), '[W]')
 
-
+'''
 y=[]
 x=[]
 while Tamb <=310:
@@ -653,9 +666,9 @@ plt.xlabel("T[K]")
 plt.ylabel("U[W]")
 plt.show()
 '''
-print(body.Bc())
-print(body.Br())
-print(body.Bres())
-print(body.Be())
-print(body.Bdest())
-
+print('Bc' ,body.Bc(), '[W]')
+print('Br', body.Br(), '[W]')
+print('Bres',body.Bres(), '[W]')
+print('Be',body.Be(), '[W]')
+print('Bdest',body.Bdest(), '[W]')
+print('rendimento',body.rendimento())
