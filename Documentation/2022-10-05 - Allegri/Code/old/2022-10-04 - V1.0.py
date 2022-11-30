@@ -498,7 +498,7 @@ def omegax(Px):
     return omega
 
 phi=0.5
-v_air=0.1                      # tra 0 e 0.4
+v_air=0.15                      # tra 0 e 0.4
 Tamb=309
 
 Pamb=101325
@@ -538,9 +538,12 @@ while math.fabs(trunk.Udot()) > 0.1:
     print('Udot=', trunk.Udot() ,'[W]')
     print('\n')
 print(w_sk(Tamb))
-#
+
+#----------------------------------
+
 print('Tcomfort=', TC(Tamb))
 
+#-------------------------------------------
 
 n=0
 for i in l:
@@ -574,9 +577,11 @@ print('He=', body.He(),'[W]')
 print('H_res=', body.H_res(),'[W]')
 print('Udot=', body.Udot(), '[W]')
 
+#----------------------------------------
 '''
-Tamb=TC(Tamb)
-print(Tamb)
+print(TC(Tamb))
+
+#----------------------------------------
 
 def error_function(x):
 
@@ -611,6 +616,8 @@ for part in body.l:
     if not type(part) == Trunk:
         part.Tint = res.x[i]
         i+=1
+'''
+#-------------------------------------------------------------------
 
 i = 0 #1  # 2
 a=['head', 'neck', 'arm', 'forearm', 'hand', 'thigh', 'leg', 'foot']
@@ -628,47 +635,267 @@ for part in body.l:
         print('\n')
         i = i + 1
 
-j=[ trunk, neck, arm, thigh]
-def Udot_trunk():
-    for i in j:
-        if i is trunk:
-            delta=0
-            for i in j :
-                if i.doppio==0:
-                    delta -= i.DeltaH_bl() * 0.8
-                else:
-                    delta -= 2*i.DeltaH_bl()
-    return  trunk.Udot() + delta
 
-print('trunk' ,'Tsk=', trunk.Tsk(), '[K]')
-print('trunk' ,'Qc=', trunk.Qc(), '[W]')
-print('trunk' ,'Qr=', trunk.Qr(), '[W]')
-print('trunk' ,'He=', trunk.He(), '[W]')
-print('trunk' ,'H_res=', trunk.H_res(), '[W]')
-print('trunk' ,'Tint=', trunk.Tint,'[K]')   #f'{type(part)} ='
-print('trunk' ,'Udot=', Udot_trunk(),'[W] ')
-print('\n')
+#------------------------------------------------------------------
 
-print('body =',body.Udot_iter(TC(Tamb)), '[W]')
-
-'''
-y=[]
-x=[]
-while Tamb <=310:
-    y.append(body.Udot_iter(Tamb))
-
-    x.append(Tamb)
-    Tamb += 1
-
-plt.plot(x,y)
-plt.title("variazione di energia interna")
-plt.xlabel("T[K]")
-plt.ylabel("U[W]")
-plt.show()
-'''
 print('Bc' ,body.Bc(), '[W]')
 print('Br', body.Br(), '[W]')
 print('Bres',body.Bres(), '[W]')
 print('Be',body.Be(), '[W]')
 print('Bdest',body.Bdest(), '[W]')
 print('rendimento',body.rendimento())
+
+
+#-----------------------grafici------------------------------------
+
+Tamb=300
+v_air=0.15
+phi=0.5
+x=[]
+y1=[]
+y2=[]
+y3=[]
+y6=[]
+y7=[]
+y8=[]
+y9=[]
+while Tamb <=310:
+    #y1.append(body.Udot())
+    y2.append(body.Bdest())
+    y3.append(body.rendimento())
+    y6.append(body.Bc())
+    y7.append(body.Br())
+    y8.append(body.Bres())
+    y9.append(body.Be())
+
+    x.append(Tamb)
+    Tamb += 1
+
+plt.plot(x,y1, label="dU/dt", color="red",marker="o")
+plt.xlabel("T[K]")
+plt.ylabel("[W]")
+plt.legend()
+plt.show()
+
+plt.plot(x,y2, label="B_dest", color="blue",marker="o")
+plt.xlabel("T[K]")
+plt.ylabel("B_dest[W]")
+plt.legend()
+plt.show()
+
+plt.plot(x,y3, label="η", color="black",marker="o")
+plt.xlabel("T[K]")
+plt.ylabel("η")
+plt.legend()
+plt.show()
+
+plt.plot(x,y6, label="Bc", color="orange",marker="o")
+plt.xlabel("T[K]")
+plt.ylabel("[W]")
+plt.legend()
+plt.show()
+
+plt.plot(x,y7, label="Br", color="purple",marker="o")
+plt.xlabel("T[K]")
+plt.ylabel("[W]")
+plt.legend()
+plt.show()
+
+plt.plot(x,y8, label="Bres", color="violet",marker="o")
+plt.xlabel("T[K]")
+plt.ylabel("[W]")
+plt.legend()
+plt.show()
+
+plt.plot(x,y9, label="Be", color="pink",marker="o")
+plt.xlabel("T[K]")
+plt.ylabel("[W]")
+plt.legend()
+plt.show()
+
+
+
+v_air= 0.15
+phi=0
+x=[]
+y5=[]
+while phi < 1:
+    y5.append(TC(303))
+    x.append(phi)
+    phi += 0.1
+
+
+
+plt.plot(x,y5, label="T_CT[K]", color="green",marker="o")
+plt.xlabel("φ")
+#plt.ylabel("T_CT[K]")
+plt.legend()
+plt.show()
+
+
+v_air=0
+phi=0.5
+x=[]
+y4=[]
+while v_air <= 0.40:
+    y4.append(TC(Tamb))
+    x.append(v_air)
+    v_air +=0.05
+
+
+plt.plot(x,y4, label="T_CT", color="grey",marker="o")
+plt.xlabel("v_air[m/s]")
+plt.ylabel("T_CT[K]")
+plt.legend()
+plt.show()
+
+
+
+
+temperature_int = [37]
+t_sk=[]
+nomi = ['Trunk', 'Head', 'Neck', 'Arm', 'Forearm', 'Hand', 'Thigh', 'Leg', 'Foot']
+for i in res.x:
+    temperature_int.append(i-273.15)
+
+plt.bar(nomi, temperature_int, color="brown", width= 0.5)
+plt.ylabel("T_int[°C]")
+plt.show()
+
+
+
+v_air=0.15
+phi=0.5
+l=[head, neck, trunk, arm, forearm, hand, thigh, leg, foot]
+L=['Head', 'Neck', 'Trunk', 'Arm', 'Forearm', 'Hand', 'Thigh', 'Leg', 'Foot']
+colori=["red", "blue", "black", "orange", "purple", "violet", "pink", "green", "grey"]
+
+x=[300,301,302,303,304,305,306,307,308,309,310]
+y1=[]
+y2=[]
+y3=[]
+y4=[]
+y5=[]
+y6=[]
+y7=[]
+y8=[]
+y9=[]
+Y=[y1,y2,y3,y4,y5,y6,y7,y8,y9]
+
+for i in range(len(l)):
+    Tamb = 300
+    while Tamb <= 310:
+        Y[i].append(l[i].Qc())
+        Tamb += 1
+    print(Y[i])
+
+plt.plot(x,Y[0], label= L[0], color= colori[0], marker=".")
+plt.plot(x,Y[1], label= L[1], color= colori[1], marker=".")
+plt.plot(x,Y[2], label= L[2], color= colori[2], marker=".")
+plt.plot(x,Y[3], label= L[3], color= colori[3], marker=".")
+plt.plot(x,Y[4], label= L[4], color= colori[4], marker=".")
+plt.plot(x,Y[5], label= L[5], color= colori[5], marker=".")
+plt.plot(x,Y[6], label= L[6], color= colori[6], marker=".")
+plt.plot(x,Y[7], label= L[7], color= colori[7], marker=".")
+plt.plot(x,Y[8], label= L[8], color= colori[8], marker=".")
+plt.xlabel("T[K]")
+plt.ylabel("Qc[W]")
+plt.legend()
+plt.show()
+
+x=[300,301,302,303,304,305,306,307,308,309,310]
+y1=[]
+y2=[]
+y3=[]
+y4=[]
+y5=[]
+y6=[]
+y7=[]
+y8=[]
+y9=[]
+Y=[y1,y2,y3,y4,y5,y6,y7,y8,y9]
+
+for i in range(len(l)):
+    Tamb = 300
+    while Tamb <= 310:
+        Y[i].append(l[i].Qr())
+        Tamb += 1
+    print(Y[i])
+
+plt.plot(x,Y[0], label= L[0], color= colori[0], marker=".")
+plt.plot(x,Y[1], label= L[1], color= colori[1], marker=".")
+plt.plot(x,Y[2], label= L[2], color= colori[2], marker=".")
+plt.plot(x,Y[3], label= L[3], color= colori[3], marker=".")
+plt.plot(x,Y[4], label= L[4], color= colori[4], marker=".")
+plt.plot(x,Y[5], label= L[5], color= colori[5], marker=".")
+plt.plot(x,Y[6], label= L[6], color= colori[6], marker=".")
+plt.plot(x,Y[7], label= L[7], color= colori[7], marker=".")
+plt.plot(x,Y[8], label= L[8], color= colori[8], marker=".")
+plt.xlabel("T[K]")
+plt.ylabel("Qr[W]")
+plt.legend()
+plt.show()
+
+x=[300,301,302,303,304,305,306,307,308,309,310]
+y1=[]
+y2=[]
+y3=[]
+y4=[]
+y5=[]
+y6=[]
+y7=[]
+y8=[]
+y9=[]
+Y=[y1,y2,y3,y4,y5,y6,y7,y8,y9]
+
+for i in range(len(l)):
+    Tamb = 300
+    while Tamb <= 310:
+        Y[i].append(l[i].H_res())
+        Tamb += 1
+    print(Y[i])
+
+plt.plot(x,Y[0], label= L[0], color= colori[0], marker=".")
+plt.plot(x,Y[1], label= L[1], color= colori[1], marker=".")
+plt.plot(x,Y[2], label= L[2], color= colori[2], marker=".")
+plt.xlabel("T[K]")
+plt.ylabel("Hres[W]")
+plt.legend()
+plt.show()
+
+x=[300,301,302,303,304,305,306,307,308,309,310]
+y1=[]
+y2=[]
+y3=[]
+y4=[]
+y5=[]
+y6=[]
+y7=[]
+y8=[]
+y9=[]
+Y=[y1,y2,y3,y4,y5,y6,y7,y8,y9]
+
+for i in range(len(l)):
+    Tamb = 300
+    while Tamb <= 310:
+        Y[i].append(l[i].He())
+        Tamb += 1
+    print(Y[i])
+
+plt.plot(x,Y[0], label= L[0], color= colori[0], marker=".")
+plt.plot(x,Y[1], label= L[1], color= colori[1], marker=".")
+plt.plot(x,Y[2], label= L[2], color= colori[2], marker=".")
+plt.plot(x,Y[3], label= L[3], color= colori[3], marker=".")
+plt.plot(x,Y[4], label= L[4], color= colori[4], marker=".")
+plt.plot(x,Y[5], label= L[5], color= colori[5], marker=".")
+plt.plot(x,Y[6], label= L[6], color= colori[6], marker=".")
+plt.plot(x,Y[7], label= L[7], color= colori[7], marker=".")
+plt.plot(x,Y[8], label= L[8], color= colori[8], marker=".")
+plt.xlabel("T[K]")
+plt.ylabel("He[W]")
+plt.legend()
+plt.show()
+'''
+
+
+
