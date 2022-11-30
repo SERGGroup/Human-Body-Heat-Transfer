@@ -7,7 +7,7 @@ from Code.body_parts.subclasses.hand import Hand
 from Code.body_parts.subclasses.thigh import Thigh
 from Code.body_parts.subclasses.leg import Leg
 from Code.body_parts.subclasses.foot import Foot
-from Code.constants import Constants as cst
+from Code.constants import Constants as cst, Pvap
 import math
 import scipy.optimize as opt
 import numpy as np
@@ -16,6 +16,8 @@ import numpy as np
 
 class Body:
     def __init__(self):
+
+        self.__init__body_parts()
 
         self.altezza = 1.76
         self.peso = 76
@@ -135,12 +137,12 @@ class Body:
 
     def H_res(self):
         H_res = ((0.0014 * Body().M() * (34 - self.Tamb + 273.15)) + (
-                    0.0173 * Body().M() * (5.87 - cst.Pvap(self.Tamb)))) * self.Area_tot_scambio()  # da ASHRAE
+                    0.0173 * Body().M() * (5.87 - Pvap(self.Tamb)))) * self.Area_tot_scambio()  # da ASHRAE
         return H_res
 
     def H_res_iter(self, T):
         H_res = ((0.0014 * Body().M() * (34 - self.Tamb + 273.15)) + (
-                    0.0173 * Body().M() * (5.87 - cst.Pvap(T)))) * self.Area_tot_scambio()  # da ASHRAE
+                    0.0173 * Body().M() * (5.87 - Pvap(T)))) * self.Area_tot_scambio()  # da ASHRAE
         return H_res
 
     def W(self):
@@ -232,3 +234,32 @@ class Body:
                 part.Tint = res.x[i]
                 i += 1
 
+    def TC(self, t, T1=310, T2=290):
+        T = t
+        if math.fabs(self.Udot_iter(t)) > 1:
+
+            if self.Udot_iter(t) < 0:
+
+                T = (t + T1) / 2
+                return self.TC(T, T1, t)
+
+            else:
+
+                T = (t + T2) / 2
+                return self.TC(T, t, T2)
+        else:
+            return T
+
+    def w_sk(self, Tamb):  # parametro
+
+        T = self.TC(Tamb)  # 303
+
+        if Tamb <= T:  # in K
+
+            w = 0.006
+
+        else:
+
+            w = 0.006 + 0.009 * (Tamb - T)
+
+        return w

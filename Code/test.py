@@ -1,4 +1,3 @@
-
 from Code.body_parts.subclasses.neck import Neck
 from Code.body_parts.subclasses.trunk import Trunk
 from Code.body_parts.subclasses.arm import Arm

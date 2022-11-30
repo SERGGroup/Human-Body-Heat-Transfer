@@ -15,3 +15,6 @@ class Head(Cylinder):
         self.Tint = 311.5
         self.Tar= 310.5
         self.v_dot_bl = 0.75
+
+    def H_res(self):
+        return self.body.H_res() * 0.45

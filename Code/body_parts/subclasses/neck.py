@@ -13,3 +13,6 @@ class Neck(Cylinder):
         self.eps = 1
         self.Tint = 310.5
         self.v_dot_bl = 0.75
+
+    def H_res(self):
+        return self.body.H_res() * 0.25

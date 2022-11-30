@@ -12,3 +12,7 @@ class Trunk(Cylinder):
         self.eps= 1
         self.Tint = 310.15
         self.v_dot_bl = 1.73
+
+    def H_res(self):
+
+        return self.body.H_res() * 0.30
