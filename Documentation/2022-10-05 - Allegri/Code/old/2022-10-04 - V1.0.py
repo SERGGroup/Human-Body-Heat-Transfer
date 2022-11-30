@@ -2,11 +2,13 @@ import math
 from matplotlib import pyplot as plt
 
 class Cylinder:
-    def __init__(self, d, h, prev=None):
+    def __init__(self, d, h, body, prev=None):
+
         self.r = d / 200
         self.h = h/ 100
         self.delta=0.90
 
+        self.body = body
         self.prev = prev
         self.succ = list()
 
@@ -124,10 +126,10 @@ class Cylinder:
         return Udot
 
 class Head(Cylinder):
-    def __init__(self, d, h):
-        super().__init__(d, h)
+    def __init__(self, d, h, body, prev):
 
         #self.succ=[]
+        super().__init__(d, h, body, prev)
         self.prev= Neck(11.4, 8.3)
         self.hr = 4.1
         self.hc = 3.6
@@ -140,8 +142,9 @@ class Head(Cylinder):
 
 
 class Neck(Cylinder):
-    def __init__(self, d, h):
-        super().__init__(d, h)
+    def __init__(self, d, h, body, prev):
+
+        super().__init__(d, h, body, prev)
 
         #self.succ= []
         self.prev= Trunk(26.0, 79.8)
@@ -155,10 +158,10 @@ class Neck(Cylinder):
 
 
 class Trunk(Cylinder):
-    def __init__(self, d, h):
-        super().__init__(d, h)
+    def __init__(self, d, h, body):
 
         #self.succ= [Neck(11.4, 8.3), Arm(9.0, 35.3), Thigh(13.4, 35.2)]
+        super().__init__(d, h, body)
         self.hr = 4.4
         self.hc = 3.2
         self.he = 5.3
@@ -260,25 +263,33 @@ class Foot(Cylinder):
 
 class Body:
     def __init__(self):
-        self.l=[Head(14.6, 20.7),
-                Neck(11.4, 8.3),
-                Trunk(26.0, 79.8),
-                Arm(9.0, 35.3),
-                Forearm(7.4, 29.2),
-                Hand(4.6, 30.0),
-                Thigh(13.4, 35.2),
-                Leg(8.6, 37.9),
-                Foot(7.2, 24.1)]
+
         self.altezza=1.76
         self.peso=76
         self.sesso=1                                #1=maschio,0=femmina
         self.eta=25
         self.Atot=1.8
 
+        # misure prese da Takemori et al. per persona di 1,76 m,
+        # da trovare relazioni fra i diversi raggi e tra un raggio
+        # di riferimento (tronco) e l'altezza del campione ?
+    def __init_body_parts(self):
 
-                                                    # misure prese da Takemori et al. per persona di 1,76 m,
-                                                    # da trovare relazioni fra i diversi raggi e tra un raggio
-                                                    # di riferimento (tronco) e l'altezza del campione ?
+        trunk = Trunk(26.0, 79.8, self)
+        neck = Neck(11.4, 8.3, self, trunk)
+        head = Head(11.4, 8.3, self, neck)
+
+        self.l = [head,
+                  neck,
+                  trunk,
+                  Arm(9.0, 35.3),
+                  Forearm(7.4, 29.2),
+                  Hand(4.6, 30.0),
+                  Thigh(13.4, 35.2),
+                  Leg(8.6, 37.9),
+                  Foot(7.2, 24.1)]
+
+
     def Area_tot_scambio(self):
         A=0
         for i in self.l:
