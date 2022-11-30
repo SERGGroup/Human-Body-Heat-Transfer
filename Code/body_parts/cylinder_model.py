@@ -1,3 +1,4 @@
+from Code.constants import Constants as cst
 import math
 
 class Cylinder:
@@ -23,53 +24,53 @@ class Cylinder:
         return ((math.pi * self.r * 2 * self.h) + (math.pi * 4 * self.r ** 2)) / 10000
 
     def Qc(self):
-        if v_air<= 0.2:
-            Qc = self.hc * self.area_s() * (self.Tsk() - Tamb) * fcl
+        if body.v_air<= 0.2:
+            Qc = self.hc * self.area_s() * (self.Tsk() - body.Tamb) * cst.fcl
         else:
-            hc= 8.3 * (v_air**0.5)                  #ASHRAE
-            Qc = hc * self.area_s() * (self.Tsk() - Tamb) * fcl
+            hc= 8.3 * (body.v_air**0.5)                  #ASHRAE
+            Qc = hc * self.area_s() * (self.Tsk() - body.Tamb) * cst.fcl
         return Qc
 
     def Qc_iter (self,T):
-        if v_air <= 0.2:
-            Qc = self.hc * self.area_s() * (self.Tsk() - T) * fcl
+        if body.v_air <= 0.2:
+            Qc = self.hc * self.area_s() * (self.Tsk() - T) * cst.fcl
         else:
-            hc = 8.3 * (v_air ** 0.5)  # ASHRAE
-            Qc = hc * self.area_s() * (self.Tsk() - T) * fcl
+            hc = 8.3 * (body.v_air ** 0.5)  # ASHRAE
+            Qc = hc * self.area_s() * (self.Tsk() - T) * cst.fcl
         return Qc
 
     def Qr(self):
         sigma= 5.67*(10**(-8))
         eps_pelle= 0.95
-        Qr =  sigma * self.area_s() *eps_pelle* ((self.Tsk()**4) - (Tamb**4)) * fcl * 0.73                 #termine preso da Fagner,
+        Qr =  sigma * self.area_s() *eps_pelle* ((self.Tsk()**4) - (body.Tamb**4)) * cst.fcl * 0.73                 #termine preso da Fagner,
         return Qr                                                                                   #è il rapporto tra l'area effettivamente sottoposta
                                                                                                     # a scambio termico per radiazione e l'area di DuBois
     def Qr_iter (self,T):
         sigma = 5.67 * (10 ** (-8))
         eps_pelle = 0.95
-        Qr = sigma * self.area_s() * eps_pelle * ((self.Tsk() ** 4) - (T ** 4)) * fcl * 0.73
+        Qr = sigma * self.area_s() * eps_pelle * ((self.Tsk() ** 4) - (T ** 4)) * cst.fcl * 0.73
         return Qr
 
     def He(self):
-        P1 = Pvap(self.Tsk())
-        P2 = Pvap(Tamb)
-        w = w_sk(Tamb)
-        if v_air <= 0.2:
+        P1 = cst.Pvap(self.Tsk())
+        P2 = cst.Pvap(body.Tamb)
+        w = body.w_sk(body.Tamb)
+        if body.v_air <= 0.2:
             he= 16.5 * self.hc
         else:
-            he= 8.3 * (v_air**0.5) * 16.5
-        He = self.area_s() * (P1 - (phi * P2)) * w / ((Rcl + (1 / (fcl * he))))
+            he= 8.3 * (body.v_air**0.5) * 16.5
+        He = self.area_s() * (P1 - (body.phi * P2)) * w / ((cst.Rcl + (1 / (cst.fcl * he))))
         return He
 
     def He_iter(self,T):
-        P1 = Pvap(self.Tsk())
-        P2 = Pvap(T)
+        P1 = cst.Pvap(self.Tsk())
+        P2 = cst.Pvap(T)
         w = 0.006
-        if v_air <= 0.2:
+        if body.v_air <= 0.2:
             he= 16.5 * self.hc
         else:
-            he= 8.3 * (v_air**0.5) * 16.5
-        He = self.area_s() * (P1 - (phi * P2)) * w / ((Rcl + (1 / (fcl * he))))
+            he= 8.3 * (body.v_air**0.5) * 16.5
+        He = self.area_s() * (P1 - (body.phi * P2)) * w / ((cst.Rcl + (1 / (cst.fcl * he))))
         return He
 
     def H_res(self):
@@ -112,11 +113,11 @@ class Cylinder:
         return delta
 
     def blod_HE(self, DT):
-        delta= -(0.001 * self.v_dot_bl /60) * rho_bl * cp_ve * DT * self.eps
+        delta= -(0.001 * self.v_dot_bl /60) * cst.rho_bl * cst.cp_ve * DT * self.eps
         return delta
 
     def M_i(self):
-        return Body().M() * self.volume() / Body().Vol_tot()
+        return body.M() * self.volume() / body.Vol_tot()
 
     def Udot(self):
         Udot = self.M_i() - (self.Qc() + self.Qr() + self.He() + self.H_res()) + self.DeltaH_bl()

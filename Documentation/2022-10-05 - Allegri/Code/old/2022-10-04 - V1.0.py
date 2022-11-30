@@ -172,10 +172,10 @@ class Trunk(Cylinder):
 
 
 class Arm(Cylinder):
-    def __init__(self, d, h):
-        super().__init__(d, h)
+    def __init__(self, d, h, body, prev):
 
-        #self.succ=[Forearm(7.4, 29.2)]
+        super().__init__(d, h, body, prev)
+
         self.prev= Trunk(26.0, 79.8)
         self.hr = 5.2
         self.hc = 2.9
@@ -187,10 +187,10 @@ class Arm(Cylinder):
 
 
 class Forearm(Cylinder):
-    def __init__(self, d, h):
-        super().__init__(d, h)
+    def __init__(self, d, h, body, prev):
 
-        #self.succ=[Hand(4.6, 30.0)]
+        super().__init__(d, h, body, prev)
+
         self.prev= Arm(9.0, 35.3)
         self.hr = 4.9
         self.hc = 3.7
@@ -202,10 +202,10 @@ class Forearm(Cylinder):
 
 
 class Hand(Cylinder):
-    def __init__(self, d, h):
-        super().__init__(d, h)
+    def __init__(self, d, h, body, prev):
 
-        #self.succ=[]
+        super().__init__(d, h, body, prev)
+
         self.prev=Forearm(7.4, 29.2)
         self.hr = 4.1
         self.hc = 4.1
@@ -217,10 +217,10 @@ class Hand(Cylinder):
 
 
 class Thigh(Cylinder):
-    def __init__(self, d, h):
-        super().__init__(d, h)
+    def __init__(self, d, h, body, prev):
 
-        #self.succ=[Leg(8.6, 37.9)]
+        super().__init__(d, h, body, prev)
+
         self.prev= Trunk(26.0, 79.8)
         self.hr = 4.3
         self.hc = 4.1
@@ -232,10 +232,10 @@ class Thigh(Cylinder):
 
 
 class Leg(Cylinder):
-    def __init__(self, d, h):
-        super().__init__(d, h)
+    def __init__(self, d, h, body, prev):
 
-        #self.succ= [Foot(7.2, 24.1)]
+        super().__init__(d, h, body, prev)
+
         self.prev=Thigh(13.4, 35.2)
         self.hr = 5.3
         self.hc = 4.1
@@ -247,10 +247,10 @@ class Leg(Cylinder):
 
 
 class Foot(Cylinder):
-    def __init__(self, d, h):
-        super().__init__(d, h)
+    def __init__(self, d, h, body, prev):
 
-        #self.succ=[]
+        super().__init__(d, h, body, prev)
+
         self.prev=Leg(8.6, 37.9)
         self.hr = 3.9
         self.hc = 5.1
@@ -258,7 +258,7 @@ class Foot(Cylinder):
         self.doppio = 1
         self.eps = 0.92
         self.Tint = 308.5
-        self.v_dot_bl = 0.28      #[L/min]
+        self.v_dot_bl = 0.28
 
 
 class Body:
@@ -328,7 +328,7 @@ class Body:
 
     def Qctot(self):                                        # calore scambiato per convezione                  #ASHRAE
         Q=0
-        for i in l:
+        for i in body.l:
             if i.doppio==0:
                 Q += i.Qc()
             else:
@@ -337,7 +337,7 @@ class Body:
 
     def Qctot_iter(self,T):                                        # calore scambiato per convezione                  #ASHRAE
         Q=0
-        for i in l:
+        for i in body.l:
             if i.doppio==0:
                 Q += i.Qc_iter(T)
             else:
@@ -439,7 +439,7 @@ class Body:
 
     def Bres(self):
         R_w = 461.51  # J/kg*K
-        Tex = trunk.Tint
+        Tex = Trunk.Tint
         deltaB_air = self.m_dot_res() * (cp_air * (Tex - Tamb - Tamb * math.log((Tex / Tamb))))                                                                      # semplificazioni dovute al fatto che T0==Tamb e P0==Pamb
         deltaB_wat = self.m_dot_res() * omegax(Pvap(Tex)) * (cp_w * (Tex - Tamb - Tamb * math.log((Tex / Tamb))) + R_w * Tamb * math.log((Pvap(Tex) / Pvap(Tamb))))  # semplificazioni dovute al fatto che T0==Tamb e P0==Pamb
         return deltaB_air - deltaB_wat
@@ -523,6 +523,7 @@ rho_bl=1059 #[kg/m^3]
 cp_w= 1900
 
 body = Body()
+'''
 head = Head(14.6, 20.7)
 neck = Neck(11.4, 8.3)
 trunk = Trunk(26.0, 79.8)
@@ -536,7 +537,7 @@ foot = Foot(7.2, 24.1)
 l=[head, neck, trunk, arm, forearm, hand, thigh, leg, foot]
 L=['head', 'neck', 'trunk', 'arm', 'forearm', 'hand', 'thigh', 'leg', 'foot']
 
-'''
+
 for i in l:
     print(i.succ)
     print(type(i.prev))

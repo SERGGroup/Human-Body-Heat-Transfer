@@ -1,4 +1,17 @@
 from Code.body_parts.subclasses.head import Head
+from Code.body_parts.subclasses.neck import Neck
+from Code.body_parts.subclasses.trunk import Trunk
+from Code.body_parts.subclasses.arm import Arm
+from Code.body_parts.subclasses.forearm import Forearm
+from Code.body_parts.subclasses.hand import Hand
+from Code.body_parts.subclasses.thigh import Thigh
+from Code.body_parts.subclasses.leg import Leg
+from Code.body_parts.subclasses.foot import Foot
+from Code.constants import Constants as cst
+import math
+import scipy.optimize as opt
+import numpy as np
+
 
 
 class Body:
@@ -6,29 +19,26 @@ class Body:
 
         self.altezza = 1.76
         self.peso = 76
-        self.sesso = 1  # 1=maschio,0=femmina
+        self.sesso = 1        # 1=maschio,0=femmina
         self.eta = 25
         self.Atot = 1.8
 
-        # misure prese da Takemori et al. per persona di 1,76 m,
-        # da trovare relazioni fra i diversi raggi e tra un raggio
-        # di riferimento (tronco) e l'altezza del campione ?
+        self.Tamb=303
+        self.phi= 0.5
+        self.v_air= 0.15
 
-    def __init_body_parts(self):
+    def __init__body_parts(self):
 
         trunk = Trunk(26.0, 79.8, self)
         neck = Neck(11.4, 8.3, self, trunk)
-        head = Head(11.4, 8.3, self, neck)
-
-        self.l = [head,
-                  neck,
-                  trunk,
-                  Arm(9.0, 35.3),
-                  Forearm(7.4, 29.2),
-                  Hand(4.6, 30.0),
-                  Thigh(13.4, 35.2),
-                  Leg(8.6, 37.9),
-                  Foot(7.2, 24.1)]
+        head = Head(14.6, 20.7, self, neck)
+        arm = Arm (9.0, 35.3,self,trunk)
+        forearm= Forearm(7.4, 29.2,self, arm)
+        hand= Hand(4.6, 30.0, self, forearm)
+        thigh= Thigh(13.4, 35.2, self, trunk)
+        leg= Leg(8.6, 37.9, self, thigh)
+        foot= Foot(7.2, 24.1, self, leg)
+        self.l = [head, neck, trunk, arm, forearm, hand, thigh, leg, foot]
 
     def Area_tot_scambio(self):
         A = 0
@@ -67,7 +77,7 @@ class Body:
 
     def Qctot(self):  # calore scambiato per convezione                  #ASHRAE
         Q = 0
-        for i in l:
+        for i in self.l:
             if i.doppio == 0:
                 Q += i.Qc()
             else:
@@ -76,7 +86,7 @@ class Body:
 
     def Qctot_iter(self, T):  # calore scambiato per convezione                  #ASHRAE
         Q = 0
-        for i in l:
+        for i in self.l:
             if i.doppio == 0:
                 Q += i.Qc_iter(T)
             else:
@@ -124,13 +134,13 @@ class Body:
         return m_dot_res
 
     def H_res(self):
-        H_res = ((0.0014 * Body().M() * (34 - Tamb + 273.15)) + (
-                    0.0173 * Body().M() * (5.87 - Pvap(Tamb)))) * self.Area_tot_scambio()  # da ASHRAE
+        H_res = ((0.0014 * Body().M() * (34 - self.Tamb + 273.15)) + (
+                    0.0173 * Body().M() * (5.87 - cst.Pvap(self.Tamb)))) * self.Area_tot_scambio()  # da ASHRAE
         return H_res
 
     def H_res_iter(self, T):
-        H_res = ((0.0014 * Body().M() * (34 - Tamb + 273.15)) + (
-                    0.0173 * Body().M() * (5.87 - Pvap(T)))) * self.Area_tot_scambio()  # da ASHRAE
+        H_res = ((0.0014 * Body().M() * (34 - self.Tamb + 273.15)) + (
+                    0.0173 * Body().M() * (5.87 - cst.Pvap(T)))) * self.Area_tot_scambio()  # da ASHRAE
         return H_res
 
     def W(self):
@@ -149,7 +159,7 @@ class Body:
     def Br(self):
         Br = 0
         for i in self.l:
-            B = i.Qr() * (1 - (Tamb / i.Tsk()))
+            B = i.Qr() * (1 - (self.Tamb / i.Tsk()))
             if i.doppio == 0:
                 Br += B
             else:
@@ -159,7 +169,7 @@ class Body:
     def Bc(self):
         Bc = 0
         for i in self.l:
-            B = i.Qc() * (1 - (Tamb / i.Tsk()))
+            B = i.Qc() * (1 - (self.Tamb / i.Tsk()))
             if i.doppio == 0:
                 Bc += B
             else:
@@ -175,24 +185,20 @@ class Body:
                 T += 2 * i.Tsk()
         return T / 15
 
-    def Be(self):  # suodre stimato 10-12 l al giorno
-        mw_ = 3 * 10 ** (
-            -6) * 1000  # ipotizzata al valore minimo con 0.3*10^-6, valore 3 in linea con articlo di ferreira
-        h_lv = 2260  # kJ/K
-        s_lv = 6.056  # kJ/kg*K
-        R_w = 0.46151  # kJ/kg*K
-        Be = mw_ * (h_lv - Tamb * s_lv) + mw_ * R_w * Tamb * math.log((Pvap(self.mean_Tsk()) / Pvap(Tamb)))
+    def Be(self):
+        mw_ = 3 * 10 ** (-6) * 1000
+        h_lv = 2260
+        s_lv = 6.056
+        R_w = 0.46151
+        Be = mw_ * (h_lv - self.Tamb * s_lv) + mw_ * R_w * self.Tamb * math.log((cst.Pvap(self.mean_Tsk()) / cst.Pvap(self.Tamb)))
         return Be
 
     def Bres(self):
         R_w = 461.51  # J/kg*K
-        Tex = trunk.Tint
-        deltaB_air = self.m_dot_res() * (cp_air * (Tex - Tamb - Tamb * math.log(
-            (Tex / Tamb))))  # semplificazioni dovute al fatto che T0==Tamb e P0==Pamb
-        deltaB_wat = self.m_dot_res() * omegax(Pvap(Tex)) * (
-                    cp_w * (Tex - Tamb - Tamb * math.log((Tex / Tamb))) + R_w * Tamb * math.log(
-                (Pvap(Tex) / Pvap(Tamb))))  # semplificazioni dovute al fatto che T0==Tamb e P0==Pamb
-        return deltaB_air - deltaB_wat
+        Tex = Trunk.Tint
+        deltaB_air = self.m_dot_res() * (cst.cp_air * (Tex - self.Tamb - self.Tamb * math.log((Tex / self.Tamb))))
+        deltaB_wat = self.m_dot_res() * cst.omegax(cst.Pvap(Tex)) * (cst.cp_w * (Tex - self.Tamb - self.Tamb * math.log((Tex / self.Tamb))) + R_w * self.Tamb * math.log((cst.Pvap(Tex) / cst.Pvap(self.Tamb))))
+        return deltaB_air + deltaB_wat
 
     def Bdest(self):
         return self.M() - (self.Bc() + self.Br() + self.Bres() + self.Be()) - self.W()
@@ -200,3 +206,29 @@ class Body:
     def rendimento(self):
         rend = 1 - (Body().Bdest() / Body().M())
         return rend
+
+    def error_function(self, x):
+
+        res = 0
+        i = 0  # 1 #2
+
+        for part in self.l:
+
+            if not type(part) == Trunk:
+                part.Tint = x[i]
+                i = i + 1
+
+        for part in self.l:
+            res += part.Udot() ** 2
+
+        return res
+
+    def aggiorna_Tint(self):
+        res = opt.minimize(self.error_function, np.array([311.5, 310.5, 309, 308.5, 308, 309, 308.5, 308]))
+
+        i = 0
+        for part in self.l:
+            if not type(part) == Trunk:
+                part.Tint = res.x[i]
+                i += 1
+
