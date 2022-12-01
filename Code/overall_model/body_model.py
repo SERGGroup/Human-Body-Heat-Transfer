@@ -7,7 +7,7 @@ from Code.body_parts.subclasses.hand import Hand
 from Code.body_parts.subclasses.thigh import Thigh
 from Code.body_parts.subclasses.leg import Leg
 from Code.body_parts.subclasses.foot import Foot
-from Code.constants import Constants as cst, Pvap
+from Code.constants import Constants as cst, Pvap, omegax
 import math
 import scipy.optimize as opt
 import numpy as np
@@ -25,7 +25,7 @@ class Body:
         self.eta = 25
         self.Atot = 1.8
 
-        self.Tamb=303
+        self.Tamb= 309
         self.phi= 0.5
         self.v_air= 0.15
 
@@ -192,14 +192,14 @@ class Body:
         h_lv = 2260
         s_lv = 6.056
         R_w = 0.46151
-        Be = mw_ * (h_lv - self.Tamb * s_lv) + mw_ * R_w * self.Tamb * math.log((cst.Pvap(self.mean_Tsk()) / cst.Pvap(self.Tamb)))
+        Be = mw_ * (h_lv - self.Tamb * s_lv) + mw_ * R_w * self.Tamb * math.log((Pvap(self.mean_Tsk()) / Pvap(self.Tamb)))
         return Be
 
     def Bres(self):
         R_w = 461.51  # J/kg*K
-        Tex = Trunk.Tint
+        Tex = 310.15
         deltaB_air = self.m_dot_res() * (cst.cp_air * (Tex - self.Tamb - self.Tamb * math.log((Tex / self.Tamb))))
-        deltaB_wat = self.m_dot_res() * cst.omegax(cst.Pvap(Tex)) * (cst.cp_w * (Tex - self.Tamb - self.Tamb * math.log((Tex / self.Tamb))) + R_w * self.Tamb * math.log((cst.Pvap(Tex) / cst.Pvap(self.Tamb))))
+        deltaB_wat = self.m_dot_res() * omegax(Pvap(Tex)) * (cst.cp_w * (Tex - self.Tamb - self.Tamb * math.log((Tex / self.Tamb))) + R_w * self.Tamb * math.log((Pvap(Tex) / Pvap(self.Tamb))))
         return deltaB_air + deltaB_wat
 
     def Bdest(self):
@@ -263,3 +263,5 @@ class Body:
             w = 0.006 + 0.009 * (Tamb - T)
 
         return w
+
+
