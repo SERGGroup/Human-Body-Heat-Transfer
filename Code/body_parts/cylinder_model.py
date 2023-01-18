@@ -3,11 +3,11 @@ import math
 
 class Cylinder:
 
-    def __init__(self, d, h, body, prev=None):
+    def __init__(self, d, h, body, prev=None, delta=0.9):
 
         self.r = d / 200
-        self.h = h/ 100
-        self.delta=0.90
+        self.h = h / 100
+        self.delta = delta
         self.body = body
 
         self.prev = prev

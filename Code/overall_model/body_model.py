@@ -15,11 +15,11 @@ import numpy as np
 
 
 class Body:
-    def __init__(self):
+    def __init__(self, altezza=1.8):
 
         self.__init__body_parts()
 
-        self.altezza = 1.76
+        self.altezza = altezza
         self.peso = 76
         self.sesso = 1        # 1=maschio,0=femmina
         self.eta = 25
