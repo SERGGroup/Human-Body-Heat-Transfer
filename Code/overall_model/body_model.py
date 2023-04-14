@@ -40,11 +40,11 @@ class Body:
         thigh= Thigh(13.4, 35.2, self, trunk)
         leg= Leg(8.6, 37.9, self, thigh)
         foot= Foot(7.2, 24.1, self, leg)
-        self.l = [head, neck, trunk, arm, forearm, hand, thigh, leg, foot]
+        self.body_parts = [head, neck, trunk, arm, forearm, hand, thigh, leg, foot]
 
     def Area_tot_scambio(self):
         A = 0
-        for i in self.l:
+        for i in self.body_parts:
             if i.doppio == 0:
                 A += i.area_s()
             else:
@@ -53,7 +53,7 @@ class Body:
 
     def Area_tot(self):
         A = 0
-        for i in self.l:
+        for i in self.body_parts:
             if i.doppio == 0:
                 A += i.area()
             else:
@@ -62,13 +62,14 @@ class Body:
 
     def Vol_tot(self):
         V = 0
-        for i in self.l:
+        for i in self.body_parts:
             if i.doppio == 0:
                 V += i.volume()
             else:
                 V += 2 * i.volume()
         return V
 
+    # self.eta = età anagrafica
     def M(self):
         if self.sesso == 1:
             M = 66.5 + 13.8 * self.peso + 5 * self.altezza * 100 - 6.8 * self.eta
@@ -79,7 +80,7 @@ class Body:
 
     def Qctot(self):  # calore scambiato per convezione                  #ASHRAE
         Q = 0
-        for i in self.l:
+        for i in self.body_parts:
             if i.doppio == 0:
                 Q += i.Qc()
             else:
@@ -88,7 +89,7 @@ class Body:
 
     def Qctot_iter(self, T):  # calore scambiato per convezione                  #ASHRAE
         Q = 0
-        for i in self.l:
+        for i in self.body_parts:
             if i.doppio == 0:
                 Q += i.Qc_iter(T)
             else:
@@ -97,7 +98,7 @@ class Body:
 
     def Qrtot(self):  # calore scambiato per irraggiamento
         Q = 0
-        for i in self.l:
+        for i in self.body_parts:
             if i.doppio == 0:
                 Q += i.Qr()
             else:
@@ -106,7 +107,7 @@ class Body:
 
     def Qrtot_iter(self, T):  # calore scambiato per irraggiamento
         Q = 0
-        for i in self.l:
+        for i in self.body_parts:
             if i.doppio == 0:
                 Q += i.Qr_iter(T)
             else:
@@ -115,7 +116,7 @@ class Body:
 
     def He(self):  # calore scambiato per evaporazione
         H = 0  # nel modello EES la Rcl è 10, non capisco perchè
-        for i in self.l:  # essendo a riposo e cercando una T per cui U_dot = 0 pensavo di mettere la w minima
+        for i in self.body_parts:  # essendo a riposo e cercando una T per cui U_dot = 0 pensavo di mettere la w minima
             if i.doppio == 0:
                 H += i.He()
             else:
@@ -124,7 +125,7 @@ class Body:
 
     def He_iter(self, T):
         H = 0
-        for i in self.l:
+        for i in self.body_parts:
             if i.doppio == 0:
                 H += i.He_iter(T)
             else:
@@ -160,7 +161,7 @@ class Body:
 
     def Br(self):
         Br = 0
-        for i in self.l:
+        for i in self.body_parts:
             B = i.Qr() * (1 - (self.Tamb / i.Tsk()))
             if i.doppio == 0:
                 Br += B
@@ -170,7 +171,7 @@ class Body:
 
     def Bc(self):
         Bc = 0
-        for i in self.l:
+        for i in self.body_parts:
             B = i.Qc() * (1 - (self.Tamb / i.Tsk()))
             if i.doppio == 0:
                 Bc += B
@@ -180,7 +181,7 @@ class Body:
 
     def mean_Tsk(self):
         T = 0
-        for i in self.l:
+        for i in self.body_parts:
             if i.doppio == 0:
                 T += i.Tsk()
             else:
@@ -214,13 +215,13 @@ class Body:
         res = 0
         i = 0  # 1 #2
 
-        for part in self.l:
+        for part in self.body_parts:
 
             if not type(part) == Trunk:
                 part.Tint = x[i]
                 i = i + 1
 
-        for part in self.l:
+        for part in self.body_parts:
             res += part.Udot() ** 2
 
         return res
@@ -229,7 +230,7 @@ class Body:
         res = opt.minimize(self.error_function, np.array([311.5, 310.5, 309, 308.5, 308, 309, 308.5, 308]))
 
         i = 0
-        for part in self.l:
+        for part in self.body_parts:
             if not type(part) == Trunk:
                 part.Tint = res.x[i]
                 i += 1

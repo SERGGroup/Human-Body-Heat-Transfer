@@ -25,7 +25,7 @@ def error_function(x):
     res = 0
     i = 0  # 1 #2
 
-    for part in body.l:
+    for part in body.body_parts:
 
         # part.eps = x[0]
         # part.delta = x[1]           #
@@ -33,7 +33,7 @@ def error_function(x):
             part.Tint = x[i]
             i = i + 1
 
-    for part in body.l:
+    for part in body.body_parts:
         res += part.Udot() ** 2
 
     print(res)
@@ -49,7 +49,7 @@ print('\n')
 print(res.x)
 
 i = 0
-for part in body.l:
+for part in body.body_parts:
     if not type(part) == Trunk:
         part.Tint = res.x[i]
         i += 1
@@ -59,7 +59,7 @@ for part in body.l:
 i = 0 #1  # 2
 a=['head', 'neck', 'arm', 'forearm', 'hand', 'thigh', 'leg', 'foot']
 print('\n')
-for part in body.l:
+for part in body.body_parts:
     if not type(part) == Trunk:
         print(part.Tint)
         print(a[i],'Tsk=', part.Tsk(), '[K]')

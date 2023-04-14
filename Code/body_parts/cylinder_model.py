@@ -3,18 +3,31 @@ import math
 
 class Cylinder:
 
-    def __init__(self, d, h, body, prev=None, delta=0.9):
+    def __init__(self, d, h, body, prev=None, delta=1):
+
+        """
+        :param d: cylinder diam in cm
+        :param h: height cylinder in cm
+        :param body: main class controlling the cylinder
+        :param prev: previous cylinder according the blood flow
+        :param delta:
+        """
 
         self.r = d / 200
         self.h = h / 100
         self.delta = delta
         self.body = body
 
+        # DEFINED IN SUBCLASSES
+        self.Tint = 0.
+        self.hc = 0.
+        self.v_dot_bl = 0.
+        self.eps = 0.
+
         self.prev = prev
         self.succ = list()
 
         if self.prev is not None:
-
             prev.succ.append(self)
 
     def volume(self):
@@ -27,6 +40,10 @@ class Cylinder:
         return ((math.pi * self.r * 2 * self.h) + (math.pi * 4 * self.r ** 2)) / 10000
 
     def Qc(self):
+        """
+        Convective heat exchange
+        :return:
+        """
         if self.body.v_air<= 0.2:
             Qc = self.hc * self.area_s() * (self.Tsk() - self.body.Tamb) * cst.fcl
         else:
@@ -35,6 +52,12 @@ class Cylinder:
         return Qc
 
     def Qc_iter (self,T):
+
+        """
+
+        :param T:
+        :return:
+        """
         if self.body.v_air <= 0.2:
             Qc = self.hc * self.area_s() * (self.Tsk() - T) * cst.fcl
         else:
@@ -81,7 +104,11 @@ class Cylinder:
         return 0.
 
     def M_vol(self):
-        M_vol= self.M_i()/ self.volume() *self.delta
+        """
+
+        :return: volumetric metabolism in (W/m3)
+        """
+        M_vol= self.M_i()/ self.volume() * self.delta
         return M_vol
 
     def Tsk(self):
@@ -95,23 +122,27 @@ class Cylinder:
 
         if self.prev is not None:
 
-            dt = self.Tint - self.prev.Tint
+            dt = self.prev.Tint - self.Tint
             delta += self.blod_HE(dt)
 
         for succ in self.succ:
 
-            dt = self.Tint - succ.Tint
+            dt = succ.Tint - self.Tint
             delta += self.blod_HE(dt)
 
         return delta
 
+    # il calore massimo scambiato fra un cilindro e quello precedente a causa del sangue * un fattore epsilon che rappresenta le variazioni di portata
+    # e quindi la vasodilatazione
     def blod_HE(self, DT):
-        delta= -(0.001 * self.v_dot_bl /60) * cst.rho_bl * cst.cp_ve * DT * self.eps
+        delta= (0.001 * self.v_dot_bl /60) * cst.rho_bl * cst.cp_ve * DT * self.eps
         return delta
 
+    # il metabolismo volumetrico è uguale in ogni pezzo del corpo
     def M_i(self):
         return self.body.M() * self.volume() / self.body.Vol_tot()
 
     def Udot(self):
         Udot = self.M_i() - (self.Qc() + self.Qr() + self.He() + self.H_res()) + self.DeltaH_bl()
         return Udot
+
