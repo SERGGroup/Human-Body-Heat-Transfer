@@ -1,6 +1,6 @@
 # %%
-from Code.body_parts.subclasses.trunk import Trunk
-from Code.overall_model.body_model import Body
+from main_code.body_parts.subclasses.trunk import Trunk
+from main_code.overall_model.body_model import Body
 import scipy.optimize as opt
 import numpy as np
 import math
