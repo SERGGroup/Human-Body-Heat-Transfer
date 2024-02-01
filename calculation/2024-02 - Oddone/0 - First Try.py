@@ -1,19 +1,37 @@
-# %% IMPORT MODULES
-from main_code import Body, Cylinder
+#%% ----- IMPORT MODULES -----
+
+from main_code.cylinder_model.cylinder import Cylinder, CylinderGeometry, CylinderCoefficients
+from main_code.body_class import Body
+
+#%% ----- OBJECTS' CREATION -----
+tommaso = Body()
+coefficenti_cilindro = CylinderCoefficients(tommaso)
+geometria_tronco = CylinderGeometry(d=0.2,h=0.8,s=0.2)
+tronco = Cylinder(geometria_tronco, tommaso, coefficenti_cilindro)
+
+#%% ---- TEST CODE -----
+
+print('la temperatura prima dello scambio termico vale: ', tronco.T_int)
+print ('il valore del calore scambiato per conduzione vale: ',tronco.Q_cond())
+print('il valore del calore scambiato per convezione vale: ', tronco.Q_conv())
+print('il valore del calore scambiato per irraggiamento vale: ', tronco.Q_irr())
+print('il valore finale della T_int è: ', tronco.energy_balance(delta_t=10))
+
+#the final value of T_int is negative
 
 
-# %% INIT CALCULATIONS
-person = Body()
-trunk = Cylinder(d=0.2, h=0.6, body=person, T_int=309, internal_heat_source=100)
 
-# simulaiton of energy balance for 60 seconds:
 
-# %% EVALUATE
-delta_time = 60  # secondi
-final_T_int = trunk.energy_balance(delta_time)
-heat_lost_w = trunk.dissipated_energy_watt()
-heat_lost_j = trunk.dissipated_energy_joule(delta_time)
 
-print(f'Final T_int: {final_T_int} [K]')
-print(f'Heat lost: {heat_lost_w} [W]')
-print(f'Heat lost: {heat_lost_j} [j]')
+
+
+
+
+
+
+
+
+
+
+
+
