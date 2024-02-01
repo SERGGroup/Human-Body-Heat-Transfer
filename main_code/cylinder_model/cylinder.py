@@ -4,7 +4,7 @@ from .support import CylinderCoefficients
 from main_code.body_class import Body
 
 class Cylinder:
-    def __init__(self, geometry: CylinderGeometry, body: Body,coefficients: CylinderCoefficients, T_int = 309,internal_heat_source = 100):
+    def __init__(self, geometry: CylinderGeometry, body: Body,coefficients: CylinderCoefficients, T_int = 309,internal_heat_source = 130):
         self.geometry = geometry
         self.body = body
         self.coefficients = coefficients

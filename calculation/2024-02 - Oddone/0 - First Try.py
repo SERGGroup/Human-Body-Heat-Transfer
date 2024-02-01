@@ -6,12 +6,13 @@ from main_code.body_class import Body
 #%% ----- OBJECTS' CREATION -----
 tommaso = Body()
 coefficenti_cilindro = CylinderCoefficients(tommaso)
-geometria_tronco = CylinderGeometry(d=0.2,h=0.8,s=0.2)
+geometria_tronco = CylinderGeometry(d=0.2,h=0.8,s=00.2)
 tronco = Cylinder(geometria_tronco, tommaso, coefficenti_cilindro)
 
 #%% ---- TEST CODE -----
 
 print('la temperatura prima dello scambio termico vale: ', tronco.T_int)
+print(tronco.internal_heat_source)
 print ('il valore del calore scambiato per conduzione vale: ',tronco.Q_cond())
 print('il valore del calore scambiato per convezione vale: ', tronco.Q_conv())
 print('il valore del calore scambiato per irraggiamento vale: ', tronco.Q_irr())
