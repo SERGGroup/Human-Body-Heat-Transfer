@@ -2,14 +2,13 @@ import CoolProp.CoolProp as CP
 
 
 class EnvironmentalConditions:
-
-
-    def __init__(self, temperature=298, pressure=101325, humidity=0.60, properties=None, fluid='water'):
+    def __init__(self, temperature=298, pressure=101325, humidity=0.60,v_air = 0.6, properties=None, fluid='water'):
         self.fluid = fluid
         self.temperature = temperature
         self.pressure = pressure
         self.humidity = humidity
-        self. properties = properties
+        self.properties = properties
+        self.v_air = v_air
 
     def set_conditions(self,temperature,pressure,humidity):
         self.temperature = temperature
@@ -38,7 +37,3 @@ class EnvironmentalConditions:
 
     def get_properties(self):
         return self.properties
-
-
-    def __repr__(self):
-        return f"This is environmental conditions class."
