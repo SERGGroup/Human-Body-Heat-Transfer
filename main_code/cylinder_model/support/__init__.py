@@ -1,2 +1,3 @@
 from .cylinder_geometry import CylinderGeometry
 from .cylinder_coefficients import CylinderCoefficients
+from .environmental_conditions import EnvironmentalConditions
