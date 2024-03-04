@@ -23,9 +23,10 @@ def simulate_temperature_evolution(cylinder, delta_t, max_steps=10):
     return times, temperatures
 
 #%% ----- OBJECT'S CREATION
-tommaso_env_conditions = EnvironmentalConditions()
-tommaso_env_conditions.set_conditions(temperature=288, pressure = 101325, humidity = 0.5)
 tommaso = Body()
+tommaso_env_conditions = EnvironmentalConditions(tommaso)
+tommaso_env_conditions.set_conditions(temperature=299.15, pressure = 101325, humidity = 0.5)
+tommaso_env_conditions.calculate_properties()
 coefficent_cylinder = CylinderCoefficients(tommaso,tommaso_env_conditions)
 geometry_cylinder = CylinderGeometry(d=0.2, h=0.61, s=0.2)
 trunk = Cylinder(geometry_cylinder, tommaso, coefficent_cylinder, tommaso_env_conditions)
@@ -46,9 +47,31 @@ plt.show()
 print ('il valore del calore scambiato per conduzione vale: ',trunk.Q_cond())
 print('il valore del calore scambiato per convezione vale: ', trunk.Q_conv())
 print('il valore del calore scambiato per irraggiamento vale: ', trunk.Q_irr())
+print('il valore del calore perso per evaporazione vale: ', trunk.E_sk())
+print('il valore del calore scambiato attraverso il sangue vale: ',trunk.Q_blood())
+print('il valore del lavoro utilizzando per pompare il sangue vale: ',trunk.W_pump_blood())
 print('il valore finale della T_int è: ', trunk.energy_balance(delta_t=60*60))
-h_c_value = trunk.coefficients.calculate_hc()
-print(h_c_value)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

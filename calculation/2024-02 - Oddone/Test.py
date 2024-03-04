@@ -1,6 +1,19 @@
 from CoolProp.CoolProp import PropsSI, HAPropsSI
 import numpy as np
-from main_code.body_class import Body
+import math
+
+class Body:
+    def __init__(self, height=1.80, weight=76, gender=1, age=25, T_skin=310, T_cl=307):
+        self.height = height    #[m]
+        self.weight = weight    #[kg]
+        self.gender = gender    #[male=1; female=0]
+        self.age = age
+        self.T_skin = T_skin
+        self.T_cl = T_cl
+
+    def Dubois_surface(self):
+        return 0.202*(self.weight**0.425)*(self.height**0.725)  #[m^2]
+
 class EnvironmentalConditions:
     def __init__(self, body : Body, temperature=298, pressure=101325, humidity=0.50,v_air = 0.6, properties=None, fluid='water'):
         self.body = body
@@ -159,14 +172,113 @@ class EnvironmentalConditions:
         comp_exp = self.get_expired_air_composition()
         return ((comp_exp['pN2']/100)/(comp_insp['pN2']/100)*(comp_insp['pO2']/100))-(comp_exp['pO2'] / 100)    #percentage of O2 consumed for any volume of air expired
 
+class CylinderCoefficients:
+    def __init__(self, body: Body,environmental_conditions: EnvironmentalConditions,f_cl=0.70 ):
+        self.body = body
+        self.environmental_conditions = environmental_conditions
+        self.f_cl = f_cl    #coefficient to calculate real irradius area
 
+    def get_k_skin(self):
+        return 0.3  #[W/m*K]; thermal conductivity coefficient
 
+    def get_cp_skin(self):
+        return 3500    #[j/Kg*K]; specific heat of the skin
 
+    def get_epsilon_skin(self):
+        return 0.95
 
+    def get_sigma(self):
+        return 5.67*(10**(-8))
 
+    def calculate_hc(self): #i only make the conditions for a seated body
+        if self.environmental_conditions.v_air < 0.2:
+            h_c = 3.1
+        elif 0.2<= self.environmental_conditions.v_air < 4:
+            h_c = 8.3*(self.environmental_conditions.v_air**0.6)
+        else:
+            h_c = 0
+        return h_c  #[W/m^2*K]
 
+    def get_LR(self):
+        return 0.0165    #[K/Pa] = 16.5 [K/kPa]; Lewis ratio
+    def calculate_he(self):
+        return self.get_LR()*self.calculate_hc()    #[W/m^2*Pa]
+    def get_R_e_cl(self):
+        return 0.7858   #[(m^2*Pa)/W]; evaporate heat transfer resistence of clothing
+    def get_w_diff(self):
+        return 0.06 #skin wettedness by diffusion]
+    def get_w(self):
+        return 0.25 #skin wettedness
+    def calculate_R_e_t(self):
+        return self.get_R_e_cl()+(1/(self.calculate_he()*self.f_cl))   #[(m^2*Pa)/W]; total evaporate resistance
+    def volumetric_bood_rate(self):
+        return 5/60000  #value finded on internet, for a full body
 
+class CylinderGeometry:
+    def __init__(self, d, h, s):
+        self.d = d  #[m]
+        self.h = h  #[m]
+        self.s = s  #[m]
+        self.r = self.d/2    #[m]
 
+    def calculate_area(self):
+        return(2*math.pi * self.r *self.h) + (2*math.pi * self.r**2)    #[m^2]
 
+    def calculate_volume(self):
+        return math.pi*self.r**2*self.h    #[m^3]
 
+class Cylinder:
+    def __init__(self,
+                 geometry: CylinderGeometry, body: Body,coefficients: CylinderCoefficients,environmental_conditions: EnvironmentalConditions,
+                 T_int=309, internal_heat_source=80):
+        self.environmental_conditions = environmental_conditions
+        self.geometry = geometry
+        self.body = body
+        self.coefficients = coefficients
+        self.T_int = T_int  #[K]
+        self.internal_heat_source = internal_heat_source  #[W]
 
+    def delta_T(self):
+        return self.T_int - self.environmental_conditions.temperature    #[K]
+
+    def Q_cond(self):
+        return 2*math.pi*self.geometry.h*self.coefficients.get_k_skin()*self.delta_T()/math.log((self.geometry.d+self.geometry.s)/(self.geometry.d))    #[W]
+
+    def Q_conv(self):
+        return self.coefficients.calculate_hc()*self.geometry.calculate_area()*self.delta_T()   #[W]
+
+    def Q_irr(self):
+        return self.coefficients.get_sigma()*self.geometry.calculate_area()*self.coefficients.get_epsilon_skin()*self.coefficients.f_cl*(self.T_int**4-self.environmental_conditions.temperature**4)  #[W]
+
+    def W(self):
+        return 0
+
+    def E_sk(self):
+        P_s_sk = self.environmental_conditions.get_properties()['Water Vapor Pressure Skin']
+        P_s = self.environmental_conditions.get_properties()['Water Vapor Pressure']
+        E_sk =  self.coefficients.get_w()*(P_s_sk - P_s)*(1/self.coefficients.calculate_R_e_t())  #[met] = 58.15 [W/m^2]
+        return E_sk
+
+    def energy_balance(self, delta_t, max_steps=1000):  # M - W = Q_cond + Q_conv + Q_irr + (E_sk)
+        q_cond = self.Q_cond()
+        q_conv = self.Q_conv()
+        q_irr = self.Q_irr()
+        w = self.W()
+        e_sk = self.E_sk()
+        balance = self.internal_heat_source - w - q_cond - q_conv - q_irr -e_sk
+        self.T_int += (balance * delta_t) / (self.body.weight * self.coefficients.get_cp_skin())
+        return self.T_int
+
+    def dissipated_energy_watt(self):
+        q_cond = self.Q_cond()
+        q_conv = self.Q_conv()
+        q_irr = self.Q_irr()
+        w = self.W()
+        return q_cond+q_conv+q_irr+w
+
+    def dissipated_energy_joule(self,delta_t):
+        q_cond = self.Q_cond()
+        q_conv = self.Q_conv()
+        q_irr = self.Q_irr()
+        w = self.W()
+        return (q_cond+q_conv+q_irr+w)*delta_t
