@@ -7,8 +7,11 @@ from main_code.body_class import Body
 
 class Cylinder:
     def __init__(self,
-                 geometry: CylinderGeometry, body: Body,coefficients: CylinderCoefficients,environmental_conditions: EnvironmentalConditions,
-                 T_int=309, internal_heat_source=80):
+                 geometry: CylinderGeometry,
+                 body: Body,
+                 coefficients: CylinderCoefficients,
+                 environmental_conditions: EnvironmentalConditions,
+                 T_int=309, internal_heat_source=100):
         self.environmental_conditions = environmental_conditions
         self.geometry = geometry
         self.body = body
@@ -31,7 +34,7 @@ class Cylinder:
     def E_sk(self):
         P_s_sk = self.environmental_conditions.get_properties()['Water Vapor Pressure Skin']
         P_s = self.environmental_conditions.get_properties()['Water Vapor Pressure']
-        E_sk =  self.coefficients.get_w()*(P_s_sk - P_s)*(1/self.coefficients.calculate_R_e_t())  #[met] = 58.15 [W/m^2]
+        E_sk = self.coefficients.get_w()*(P_s_sk - P_s)*(1/self.coefficients.calculate_R_e_t())*self.body.Dubois_surface()  # [W]
         return E_sk
 
     def Q_blood(self):
