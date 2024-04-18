@@ -12,7 +12,7 @@ class Cylinder:
                  body: Body,
                  coefficients: CylinderCoefficients,
                  environmental_conditions: EnvironmentalConditions,
-                 T_int=309, internal_heat_source=100):
+                 T_int: float = 309, internal_heat_source: float = 100):
         self.environmental_conditions = environmental_conditions
         self.geometry = geometry
         self.body = body
@@ -38,18 +38,38 @@ class Cylinder:
         P_s_sk = self.environmental_conditions.get_properties()['Water Vapor Pressure Skin']
         P_s = self.environmental_conditions.get_properties()['Water Vapor Pressure']
         E_sk = self.coefficients.get_w() * (P_s_sk - P_s) * (
-                    1 / self.coefficients.calculate_R_e_t()) * self.body.Dubois_surface()  # [W]
+                1 / self.coefficients.calculate_R_e_t()) * self.body.Dubois_surface()  # [W]
         return E_sk
 
+
+    def get_volumetric_blood_rate(self):
+        return ((10 * self.T_int) + (
+                1 * self.body.T_skin)) / 60000000  #[m^3/s]: correlation founded in an article on the internet
+
+    def get_rho_blood(self):
+        return 1050  # [Kg/m^3]; assuming blood is an incompressible fluid
+
+    def calculate_mass_blood_rate(self):
+        return self.get_rho_blood() * self.get_volumetric_blood_rate()  # [Kg/s]
+
+    def get_blood_delta_P(self):
+        return 16000  # [Pa]
+
+    def calculate_blood_delta_h(self):  # dH = Cv*dT + V*dP ;assuming an isothermal increase of pressure
+        return (self.get_rho_blood()) ** (-1) * self.get_blood_delta_P()  # [J/Kg]
+
+    def efficiency_pump(self):
+        return 0.25
+
     def Q_blood(self):
-        return self.coefficients.calculate_blood_delta_h() * self.coefficients.calculate_mass_blood_rate()  # [W];  # power associated with kinetic energy of the flow
+        return self.calculate_blood_delta_h() * self.calculate_mass_blood_rate()  # [W];  # power associated with kinetic energy of the flow
 
     def W_pump_rev_blood(self):
-        return self.coefficients.calculate_mass_blood_rate() * (
-                    1 / self.coefficients.get_rho_blood()) * self.coefficients.get_blood_delta_P()  # [W]
+        return self.calculate_mass_blood_rate() * (
+                1 / self.get_rho_blood()) * self.get_blood_delta_P()  # [W]
 
     def W_pump_blood(self):
-        return self.W_pump_rev_blood() / self.coefficients.efficiency_pump()  # [W]
+        return self.W_pump_rev_blood() / self.efficiency_pump()  # [W]
 
     def energy_balance(self, delta_t):  # M - W = Q_cond + Q_conv + Q_irr + E_sk + Q_blood
         q_cond = self.Q_cond()
@@ -63,8 +83,8 @@ class Cylinder:
         #Update T_int
         self.T_int += (balance * delta_t) / (self.body.weight * self.coefficients.get_cp_skin())
         #Check T_int --> 18 < T_int < 43 °C
-        if not (18<= self.T_int <=43):
-            print("Error: Il valore di T_int è al di fuori dell'intervallo consentito")
+        if not (18 + 273.15 <= self.T_int <= 43 + 273.15):
+            raise ValueError("Error: Il valore di T_int è al di fuori dell'intervallo consentito")
 
         return self.T_int
 

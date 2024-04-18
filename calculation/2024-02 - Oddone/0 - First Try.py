@@ -28,16 +28,18 @@ def simulate_temperature_evolution(cylinder, delta_t, max_steps=10):
 
 
 # %% ----- OBJECT'S CREATION
-tommaso = Body(height=1.80, weight=76, gender=1, age=25, T_skin=273.15 + 28, T_cl=273.15 + 25)
+tommaso = Body(height=1.80, weight=76, gender=1, age=25, T_skin=273.15 + 25, T_cl=273.15 + 22)
 tommaso_env_conditions = EnvironmentalConditions(tommaso)
 tommaso_env_conditions.set_conditions(temperature=273.15 + 25, pressure=101325, humidity=0.60)
 tommaso_env_conditions.calculate_properties()
 coefficient_cylinder = CylinderCoefficients(tommaso, tommaso_env_conditions)
 geometry_cylinder = CylinderGeometry(d=0.2, h=0.8, s=0.2)
-trunk = Cylinder(geometry_cylinder, tommaso, coefficient_cylinder, tommaso_env_conditions)
+trunk = Cylinder(geometry_cylinder, tommaso, coefficient_cylinder, tommaso_env_conditions, T_int=43.0 + 273.15,
+                 internal_heat_source=100)
 
 delta_t = 1  # Intervallo di tempo in secondi
 times, temperatures, q_cond_list = simulate_temperature_evolution(trunk, delta_t, max_steps=60 * 60 * 24)
+
 
 plt.plot(times, np.array(temperatures) - 273.15, linestyle='-')
 plt.xticks(np.arange(0, len(times) + 1, step=60 * 60 * 2), labels=np.arange(0, 25, 2))
