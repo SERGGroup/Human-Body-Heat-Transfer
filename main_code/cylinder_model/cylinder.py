@@ -59,7 +59,13 @@ class Cylinder:
         e_sk = self.E_sk()
         q_blood = self.Q_blood()
         balance = self.internal_heat_source - (q_cond + q_conv + q_irr + e_sk + q_blood)
+
+        #Update T_int
         self.T_int += (balance * delta_t) / (self.body.weight * self.coefficients.get_cp_skin())
+        #Check T_int --> 18 < T_int < 43 °C
+        if not (18<= self.T_int <=43):
+            print("Error: Il valore di T_int è al di fuori dell'intervallo consentito")
+
         return self.T_int
 
     def dissipated_energy_watt(self):
