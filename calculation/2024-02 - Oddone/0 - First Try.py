@@ -21,7 +21,6 @@ def simulate_temperature_evolution(cylinder, delta_t, max_steps=10):
 
         cylinder.energy_balance(delta_t)
 
-
         current_time += delta_t
 
     return times, temperatures, q_cond_list
@@ -34,12 +33,11 @@ tommaso_env_conditions.set_conditions(temperature=273.15 + 25, pressure=101325, 
 tommaso_env_conditions.calculate_properties()
 coefficient_cylinder = CylinderCoefficients(tommaso, tommaso_env_conditions)
 geometry_cylinder = CylinderGeometry(d=0.2, h=0.8, s=0.2)
-trunk = Cylinder(geometry_cylinder, tommaso, coefficient_cylinder, tommaso_env_conditions, T_int=43.0 + 273.15,
+trunk = Cylinder(geometry_cylinder, tommaso, coefficient_cylinder, tommaso_env_conditions, T_int=36.0 + 273.15,
                  internal_heat_source=100)
 
 delta_t = 1  # Intervallo di tempo in secondi
 times, temperatures, q_cond_list = simulate_temperature_evolution(trunk, delta_t, max_steps=60 * 60 * 24)
-
 
 plt.plot(times, np.array(temperatures) - 273.15, linestyle='-')
 plt.xticks(np.arange(0, len(times) + 1, step=60 * 60 * 2), labels=np.arange(0, 25, 2))
@@ -59,10 +57,10 @@ plt.show()
 
 # %% ---- TEST CODE -----
 
-print('il valore del calore scambiato per conduzione vale: ', trunk.Q_cond(), '[W]')
-print('il valore del calore scambiato per convezione vale: ', trunk.Q_conv(), '[W]')
-print('il valore del calore scambiato per irraggiamento vale: ', trunk.Q_irr(), '[W]')
-print('il valore del calore perso per evaporazione vale: ', trunk.E_sk(), '[W]')
-print('il valore del calore scambiato attraverso il sangue vale: ', trunk.Q_blood(), '[W]')
-print('il valore del lavoro utilizzando per pompare il sangue vale: ', trunk.W_pump_blood(), '[W]')
-print('il valore finale della T_int è: ', trunk.energy_balance(delta_t=60 * 60) - 273.15, '[degC]')
+print(f'Heat exchanged by conduction: {trunk.Q_cond()=:.4f} [W]')
+print(f'Heat exchanged by convection: {trunk.Q_conv()=:.4f} [W]')
+print(f'Heat exchanged by radiation: {trunk.Q_irr()=:.4f} [W]')
+print(f'Heat lost through evaporation: {trunk.E_sk()=:.4f} [W]')
+print(f'Heat exchanged through the blood: {trunk.Q_blood()=:.4f} [W]')
+print(f'Work done to pump blood:{trunk.W_pump_blood()=:.4f} [W]')
+print(f'Internal Temperature at the last instant: {trunk.energy_balance(delta_t=60 * 60) - 273.15=:.4f} [$\degree$C]')
