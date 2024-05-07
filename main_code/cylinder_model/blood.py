@@ -4,7 +4,7 @@ from main_code.cylinder_model.cylinder import Cylinder
 class Blood:
     def __init__(self, cylinder: Cylinder):
         self.cylinder = cylinder
-        # super().__init__()
+        super().__init__()
 
     def get_volumetric_bood_rate(self):
         return ((10 * self.cylinder.T_int) + (
