@@ -40,7 +40,7 @@ class Cylinder:
     def Q_cond(self) -> float:
         return (2 * math.pi * self.geometry.h * self.coefficients.get_k_skin() *
                 (self.body.T_skin - self.environmental_conditions.temperature) / math.log(
-            (self.geometry.d + self.geometry.s) / self.geometry.d))  # [W]
+                    (self.geometry.d + self.geometry.s) / self.geometry.d))  # [W]
 
     def Q_conv(self) -> float:
         # return self.coefficients.calculate_hc() * self.geometry.calculate_area() * self.delta_T()  # [W]
@@ -50,7 +50,7 @@ class Cylinder:
     def Q_irr(self) -> float:
         return (self.coefficients.get_sigma() * self.geometry.calculate_area() * self.coefficients.get_epsilon_skin()
                 * self.coefficients.calculate_fcl() * (
-                            self.body.T_int ** 4 - self.environmental_conditions.temperature ** 4))  # [W]
+                        self.body.T_int ** 4 - self.environmental_conditions.temperature ** 4))  # [W]
 
         # return self.coefficients.calculate_fcl() * self.coefficients.calculate_hr() * \
         #     (self.body.T_cl - self.coefficients.get_T_mr())
@@ -101,24 +101,29 @@ class Cylinder:
         return self.W_pump_rev_blood() / self.efficiency_pump()  # [W]
 
     def calculate_m_res(self) -> float:
-        return self.K_res * self.body.internal_heat_source * self.body.DuBois_surface()
+        return self.K_res * self.body.internal_heat_source * self.body.DuBois_surface()  # [kg/s]
 
     def calculate_m_w_res(self) -> float:
-        return self.calculate_m_res() * (self.environmental_conditions.get_properties()['Humidity ratio Exhaled']
-                                         - self.environmental_conditions.get_properties()['Humidity ratio'])
+        return self.calculate_m_res() * (self.environmental_conditions.get_properties()['Humidity Ratio Exhaled']
+                                         - self.environmental_conditions.get_properties()['Humidity Ratio'])  # [kg/s]
 
     def C_res(self) -> float:
-        return 1.4E-3 * self.body.internal_heat_source * (34 - self.environmental_conditions.temperature - 273.15)
+        return 1.4E-3 * self.body.internal_heat_source * (34 - (self.environmental_conditions.temperature - 273.15))
 
     def E_res(self) -> float:
         return 1.73E-2 * self.body.internal_heat_source * (
                 5.87E3 - self.environmental_conditions.get_properties()['Water Vapor Pressure'])
 
+    def calculate_T_ex(self) -> float:
+        return (32.6 + 0.066 * (self.environmental_conditions.temperature - 273.15) +
+                32 * self.environmental_conditions.get_properties()['Humidity Ratio'])
+
     def Q_res(self) -> float:
-        # return self.C_res() + self.E_res()
-        return (self.calculate_m_res() * (self.environmental_conditions.get_properties()['Enthalpy Exhaled'] -
-                                          self.environmental_conditions.get_properties()['Enthalpy Inhaled']) *
-                self.body.DuBois_surface())
+        return self.C_res() + self.E_res()
+        # return (self.calculate_m_res() * (self.environmental_conditions.get_properties()['Enthalpy Exhaled'] -
+        #                                   self.environmental_conditions.get_properties()['Enthalpy Inhaled']) +
+        #         self.calculate_m_w_res() * self.environmental_conditions.get_properties()['Specific Heat'] *
+        #         (self.calculate_T_ex() - (self.environmental_conditions.temperature - 273.15)))       # [W]
 
     # def W(self) -> float:
     #     return self.body.work

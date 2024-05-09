@@ -7,7 +7,7 @@ import numpy as np
 import matplotlib as mpl
 
 # mpl.use(backend='Qt5Py')
-plt.rcParams['text.usetex'] = True
+# plt.rcParams['text.usetex'] = True
 plt.rcParams['font.family'] = 'serif'
 plt.rcParams['figure.dpi'] = 300
 
@@ -38,7 +38,7 @@ def simulate_temperature_evolution(body: Body, cylinder: Cylinder, delta_t: floa
 
 
 # %% ----- OBJECT'S CREATION
-subjects: list[Body] = [Body(height=1.80, weight=76, gender=1, age=25, T_skin=273.15 + 37, T_cl=273.15 + 24, T_int=273.15 + 37,
+subjects: list[Body] = [Body(height=1.80, weight=76, gender=1, age=25, T_skin=273.15 + 33, T_cl=273.15 + 24, T_int=273.15 + 37,
                internal_heat_source=100, work=w_) for w_ in range(0, 301, 100)]
 
 total_energies: list[list] = []
