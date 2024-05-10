@@ -119,11 +119,13 @@ class Cylinder:
                 32 * self.environmental_conditions.get_properties()['Humidity Ratio'])
 
     def Q_res(self) -> float:
-        return self.C_res() + self.E_res()
-        # return (self.calculate_m_res() * (self.environmental_conditions.get_properties()['Enthalpy Exhaled'] -
-        #                                   self.environmental_conditions.get_properties()['Enthalpy Inhaled']) +
-        #         self.calculate_m_w_res() * self.environmental_conditions.get_properties()['Specific Heat'] *
-        #         (self.calculate_T_ex() - (self.environmental_conditions.temperature - 273.15)))       # [W]
+        # return self.C_res() + self.E_res()
+        return (self.calculate_m_res() * (self.environmental_conditions.get_properties()['Enthalpy Exhaled'] -
+                                          self.environmental_conditions.get_properties()['Enthalpy Inhaled']) +
+                self.calculate_m_w_res() * self.environmental_conditions.get_properties()['Specific Heat'] *
+                (self.calculate_T_ex() - (self.environmental_conditions.temperature - 273.15)))       # [W]
+
+    def Delta_H_blood(self):
 
     # def W(self) -> float:
     #     return self.body.work
