@@ -11,6 +11,9 @@ class CylinderGeometry:
     def calculate_area(self) -> float:
         return (2 * math.pi * self.r * self.h) + (2 * math.pi * self.r ** 2)  # [m^2]
 
+    def calculate_surface_area(self):
+        return 2 * math.pi * self.r * self.h
+
     def calculate_volume(self) -> float:
         return math.pi * self.r ** 2 * self.h  # [m^3]
 

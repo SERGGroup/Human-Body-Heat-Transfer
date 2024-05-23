@@ -70,7 +70,7 @@ class Cylinder:
 
     def get_volumetric_blood_rate(self) -> float:
         return ((10 * self.body.T_int) + (
-                1 * self.body.T_skin)) / 60000000  #[m^3/s]: correlation found in an article on the internet
+                1 * self.body.T_skin)) / 60000000  # [m^3/s]: correlation found in an article on the internet
 
     # @staticmethod
     def get_rho_blood(self) -> float:
@@ -126,7 +126,7 @@ class Cylinder:
                 (self.calculate_T_ex() - (self.environmental_conditions.temperature - 273.15)))       # [W]
 
     def Delta_H_blood(self):
-
+        pass
     # def W(self) -> float:
     #     return self.body.work
 
