@@ -1,10 +1,14 @@
 # %% ----- IMPORT MODULES -----
+import math
+
 from main_code.cylinder_model import cylinder
 from main_code.cylinder_model.cylinder import Cylinder, CylinderGeometry, CylinderCoefficients, EnvironmentalConditions
 from main_code.body_class import Body
 from matplotlib import pyplot as plt
 import numpy as np
 import matplotlib as mpl
+
+from tqdm import tqdm
 
 # mpl.use(backend='Qt5Py')
 # plt.rcParams['text.usetex'] = True
@@ -38,13 +42,14 @@ def simulate_temperature_evolution(body: Body, cylinder: Cylinder, delta_t: floa
 
 
 # %% ----- OBJECT'S CREATION
-subjects: list[Body] = [Body(height=1.80, weight=76, gender=1, age=25, T_skin=273.15 + 33, T_cl=273.15 + 24, T_int=273.15 + 37,
-               internal_heat_source=100, work=w_) for w_ in range(0, 301, 100)]
+subjects: list[Body] = [
+    Body(height=1.76, weight=84, gender=1, age=29, T_skin=273.15 + 34, T_cl=273.15 + 24, T_int=273.15 + 37,
+         internal_heat_source=100, work=w_) for w_ in range(0, 301, 100)]
 
 total_energies: list[list] = []
-for k in range(len(subjects)):
+for k in tqdm(range(len(subjects)), desc='Simulating temperature evolution', total=len(subjects)):
     env_conds: list[EnvironmentalConditions] = [EnvironmentalConditions(body=subjects[k], temperature=273.15 + temp,
-                                                                        pressure=101325, humidity=0.5, v_air=0.3,
+                                                                        pressure=101325, humidity=0.85, v_air=0.3,
                                                                         fluid='water') for temp in range(5, 41, 1)]
     # subject_env_conditions = EnvironmentalConditions(body=subject, temperature=273.15 + 28, pressure=101325, humidity=0.4,
     #                                                  v_air=0.2, fluid='water')
@@ -52,19 +57,20 @@ for k in range(len(subjects)):
 
     [env_cond.calculate_properties() for env_cond in env_conds]
     # subject_env_conditions.calculate_properties()
-    cyl_coeffs: list[CylinderCoefficients] = [CylinderCoefficients(body=subjects[k], environmental_conditions=env_cond) for
+    cyl_coeffs: list[CylinderCoefficients] = [CylinderCoefficients(body=subjects[k], environmental_conditions=env_cond)
+                                              for
                                               env_cond in env_conds]
     # coefficient_cylinder = CylinderCoefficients(subject, subject_env_conditions)
     # geometry_cylinder = CylinderGeometry(d=0.5, h=1.80, s=0.2)
-    geometry = {'head':    {'d': 0.146, 'h': 0.207},
-                'neck':    {'d': 0.114, 'h': 0.083},
-                'trunk':   {'d': 0.260, 'h': 0.798},
-                'arm':     {'d': 0.090, 'h': 0.353},
-                'forearm': {'d': 0.074, 'h': 0.292},
-                'hand':    {'d': 0.046, 'h': 0.300},
-                'thigh':   {'d': 0.134, 'h': 0.352},
-                'leg':     {'d': 0.086, 'h': 0.379},
-                'foot':    {'d': 0.072, 'h': 0.241}
+    geometry = {'head':    {'d': 0.60 / math.pi, 'h': 0.24},
+                'neck':    {'d': 0.40 / math.pi, 'h': 0.10},
+                'trunk':   {'d': 1.00 / math.pi, 'h': 0.54},
+                'arm':     {'d': 0.32 / math.pi, 'h': 0.28},
+                'forearm': {'d': 0.24 / math.pi, 'h': 0.25},
+                'hand':    {'d': 0.25 / math.pi, 'h': 0.18},
+                'thigh':   {'d': 0.53 / math.pi, 'h': 0.41},
+                'leg':     {'d': 0.36 / math.pi, 'h': 0.38},
+                'foot':    {'d': 0.26 / math.pi, 'h': 0.25}
                 }
 
     Q_cond_nets, Q_conv_nets, Q_irr_nets, E_sk_nets, Q_blood_nets, Q_res_nets = [], [], [], [], [], []
@@ -98,6 +104,7 @@ for k in range(len(subjects)):
                                              vector_b=env_cond.get_vector_b(),
                                              vector_c=env_cond.get_vector_c())
         T_mr_ = env_cond.calculate_T_mr(area_factor=af_, T_surf=env_cond.get_vector_T_surf())
+        """
         print(f'Area factors: {af_}, T_mr: {T_mr_}')
         print(
             f"{Q_cond_net=:.4f}\n{Q_conv_net=:.4f}\n{Q_irr_net=:.4f}\n{E_sk_net=:.4f}\n{Q_blood_net=:.4f}\n{Q_res_net=:.4f}\n"
@@ -107,13 +114,14 @@ for k in range(len(subjects)):
             f"{cyl_coeff.calculate_fcl()=:.4f}\n{cyl_coeff.calculate_to()-273.15=:.4f}\n")
 
         print((subjects[k].T_cl - cyl_coeff.calculate_to()) / (subjects[k].T_skin - cyl_coeff.calculate_to()))
-
+        """
         total_energy_balance = (env_cond.M_act() + subjects[k].M_shiv() + subjects[k].internal_heat_source -
-                                (subjects[k].work + Q_cond_net + Q_conv_net + Q_irr_net + E_sk_net + Q_blood_net + Q_res_net))
+                                (subjects[
+                                     k].work + Q_cond_net + Q_conv_net + Q_irr_net + E_sk_net + Q_blood_net + Q_res_net))
         if total_energy_balance < subjects[k].internal_heat_source:
             total_energy_balance = subjects[k].internal_heat_source
         totals.append(total_energy_balance)
-        print(f'Total energy balance: {total_energy_balance:.4f}')
+        # print(f'Total energy balance: {total_energy_balance:.4f}')
 
     if k == 0:
         for net, label in zip([Q_cond_nets, Q_conv_nets, Q_irr_nets, E_sk_nets, Q_blood_nets, Q_res_nets,
