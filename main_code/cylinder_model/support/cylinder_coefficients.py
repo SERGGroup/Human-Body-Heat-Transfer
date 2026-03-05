@@ -1,5 +1,7 @@
 from main_code.body_class import Body
 from main_code.cylinder_model.support.environmental_conditions import EnvironmentalConditions
+
+
 # from main_code.cylinder_model.cylinder import Cylinder
 
 
@@ -30,16 +32,50 @@ class CylinderCoefficients:
 
     # @staticmethod
     def get_sigma(self) -> float:
-        return 5.67 * (10 ** (-8))  # [W/(m^2-K^4)]
+        return 5.67E-8  # [W/(m^2-K^4)]
 
     def calculate_hc(self) -> float:  # i only make the conditions for a seated body
         if self.environmental_conditions.v_air < 0.2:
             h_c: float = 3.1
         elif 0.2 <= self.environmental_conditions.v_air < 4:
             h_c = 8.3 * (self.environmental_conditions.v_air ** 0.6)
-        else:
-            h_c = 0
+        # else:
+        #     h_c = 0
         return h_c  # [W/m^2*K]
+
+    Ar_AD_ratio = {'sitting': 0.70, 'standing': 0.73}
+
+    def calculate_hr(self) -> float:
+        T_mr = self.environmental_conditions.calculate_T_mr(
+            area_factor=self.environmental_conditions.calculate_area_factor(
+                vector_a=self.environmental_conditions.get_vector_a(),
+                vector_b=self.environmental_conditions.get_vector_b(),
+                vector_c=self.environmental_conditions.get_vector_c(),
+            ),
+            T_surf=self.environmental_conditions.get_vector_T_surf())
+        return 4 * self.get_epsilon_skin() * self.get_sigma() * self.Ar_AD_ratio['sitting'] * \
+            (273.15 + (self.body.T_cl + T_mr - self.environmental_conditions.ABSOLUTE_ZERO) / 2) ** 3
+        # return 4.7 * self.get_epsilon_skin()    # [W/(m^2*K)]
+
+    def get_T_mr(self) -> float:
+        return self.environmental_conditions.calculate_T_mr(
+            area_factor=self.environmental_conditions.calculate_area_factor(
+                vector_a=self.environmental_conditions.get_vector_a(),
+                vector_b=self.environmental_conditions.get_vector_b(),
+                vector_c=self.environmental_conditions.get_vector_c(),
+            ),
+            T_surf=self.environmental_conditions.get_vector_T_surf()) + self.environmental_conditions.ABSOLUTE_ZERO
+
+    def get_h(self) -> float:
+        return self.calculate_hc() + self.calculate_hr()
+
+    def calculate_to(self) -> float:
+        return (self.calculate_hr() * self.get_T_mr() +
+                self.calculate_hc() * self.environmental_conditions.temperature) / self.get_h()
+
+    def calculate_fcl(self) -> float:
+        return (self.body.T_cl - self.calculate_to()) / (self.body.T_skin - self.calculate_to())
+        # return 0.7
 
     # @staticmethod
     def get_LR(self) -> float:
@@ -47,6 +83,9 @@ class CylinderCoefficients:
 
     def calculate_he(self) -> float:
         return self.get_LR() * self.calculate_hc()  # [W/(m^2*Pa)]
+
+    def get_R_cl(self):
+        return 0.155 * 1.01    # 1 clo = 0.155 [m^2*K)/W] 1.01 = Trousers, long-sleeved shirt, longsleeved sweater, T-shirt
 
     # @staticmethod
     def get_R_e_cl(self) -> float:
@@ -58,10 +97,17 @@ class CylinderCoefficients:
 
     # @staticmethod
     def get_w(self) -> float:
-        return 0.25  # skin wettedness
+        if self.environmental_conditions.temperature < 2.577 / 0.009:
+            return 0.0
+        elif 2.577 / 0.009 <= self.environmental_conditions.temperature < 303:
+            return 0.009 * self.environmental_conditions.temperature - 2.577
+        elif 303 <= self.environmental_conditions.temperature < 37.816 / 0.122:
+            return 0.122 * self.environmental_conditions.temperature - 36.816
+        else:
+            return 1
 
     def calculate_R_e_t(self) -> float:
-        return self.get_R_e_cl() + (1 / (self.calculate_he() * self.f_cl))  # [(m^2*Pa)/W]; total evaporate resistance
+        return self.get_R_e_cl() + (1 / (self.calculate_he() * self.calculate_fcl()))  # [(m^2*Pa)/W]; total evaporate resistance
 
     # def get_volumetric_bood_rate(self):
     #     return ((10*self.cylinder.T_int)+(1*self.body.T_skin))/60000000 #[m^3/s]: correlation founded in an article on the internet
@@ -80,5 +126,3 @@ class CylinderCoefficients:
     #
     # def efficiency_pump(self):
     #     return 0.25
-
-
